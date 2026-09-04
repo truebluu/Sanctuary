@@ -1,79 +1,101 @@
-class_name EvolutionTrigger
+class_name EnemyStagger
+extends Node
+## Burst-damage flinch system. When an enemy takes >= stagger_threshold damage
+## within stagger_window seconds, it flinches: briefly stunned (invuln, frozen)
+## for flinch_duration, then recovers. Rewards burst play, synergizes with
+## Time Dilation and the player's dash. Builds on the existing Enemy/Player
+## damage pipeline and the feel pillar of vulnerability windows.
 
-# Tunables --------------------------------------------------------------
-# Minimum creature level required for evolution.
-const EVOLUTION_LEVEL_THRESHOLD: int = 10
-# Minimum happiness percentage (0‑100) required for evolution.
-const EVOLUTION_HAPPINESS_THRESHOLD: float = 75.0
+# --- Tunables (one place to retune) ---
+@export var stagger_threshold: float = 18.0   # damage in a window needed to flinch
+@export var stagger_window: float = 0.6       # seconds to accumulate burst damage
+@export var flinch_duration: float = 0.35      # how long the enemy is stunned
+@export var flinch_knockback: float = 120.0    # pushback applied during flinch
+@export var flash_frames: int = 6              # visual flash count during flinch
 
-# Emitted when this trigger successfully evolves the creature.
-signal evolved(evolved_creature)
+signal flinch_started(target: Node)
+signal flinch_ended(target: Node)
 
-@export var target_creature: NodePath
+var _parent: Node = null
+var _damage_buffer: Array[float] = []
+var _buffer_timer: float = 0.0
+var _is_flinching: bool = false
+var _flinch_left: float = 0.0
+var _flash_count: int = 0
+var _flash_timer: float = 0.0
 
 func _ready() -> void:
-    if target_creature.is_empty():
-        push_error("EvolutionTrigger: target_creature export is empty.")
-        return
-    var creature = get_node_or_null(target_creature)
-    if not creature:
-        push_error("EvolutionTrigger: target_creature %s not found." % target_creature)
-        return
-    _creature = creature
+	_parent = get_parent()
+	if _parent == null:
+		push_error("EnemyStagger must be a child of the enemy node")
 
-    # Connect to expected stats signals.
-    if _creature.has_signal("level_up"):
-        _creature.connect("level_up", Callable(self, "_on_level_up"))
-    if _creature.has_signal("happiness_changed"):
-        _creature.connect("happiness_changed", Callable(self, "_on_happiness_changed"))
+func _process(delta: float) -> void:
+	if _is_flinching:
+		_flinch_tick(delta)
+	else:
+		_buffer_tick(delta)
 
-    # Initial check in case thresholds are already satisfied.
-    _check_evolution()
+## Call this whenever the enemy takes damage. Pass the raw damage amount.
+func register_damage(amount: float) -> void:
+	if _is_flinching:
+		return  # already stunned; damage still counts but no re-stagger mid-flinch
+	_damage_buffer.append(amount)
+	_buffer_timer = stagger_window
+	var total: float = _damage_buffer.reduce(func(a, b): return a + b, 0.0)
+	if total >= stagger_threshold:
+		_trigger_flinch()
 
-func _on_level_up() -> void:
-    _check_evolution()
+func _buffer_tick(delta: float) -> void:
+	if _damage_buffer.is_empty():
+		return
+	_buffer_timer -= delta
+	if _buffer_timer <= 0.0:
+		_damage_buffer.clear()
+		_buffer_timer = 0.0
 
-func _on_happiness_changed(_new_happiness: float) -> void:
-    _check_evolution()
+func _trigger_flinch() -> void:
+	_is_flinching = true
+	_flinch_left = flinch_duration
+	_damage_buffer.clear()
+	_buffer_timer = 0.0
+	_flash_count = flash_frames
+	_flash_timer = flinch_duration / maxf(flash_frames, 1)
+	_apply_knockback()
+	flinch_started.emit(_parent)
 
-func _check_evolution() -> void:
-    if not _creature:
-        return
+func _flinch_tick(delta: float) -> void:
+	_flinch_left -= delta
+	_flash_timer -= delta
+	if _flash_timer <= 0.0:
+		_flash_count -= 1
+		_flash_timer = flinch_duration / maxf(flash_frames, 1)
+	if _flinch_left <= 0.0:
+		_is_flinching = false
+		_flinch_left = 0.0
+		_flash_count = 0
+		flinch_ended.emit(_parent)
 
-    var current_level: int = 0
-    var current_happiness: float = 0.0
+func _apply_knockback() -> void:
+	var body: Node2D = _parent as Node2D
+	if body == null:
+		return
+	var dir: Vector2 = Vector2.UP
+	if _parent.has_method("get_knockback_dir"):
+		dir = _parent.get_knockback_dir()
+	body.apply_central_impulse(dir * flinch_knockback)
 
-    # Retrieve level; creature may expose `level` property or `get_level()` method.
-    if _creature.has_method("get_level"):
-        current_level = _creature.call("get_level",)
-    elif _creature.has_property("level"):
-        current_level = _creature.level
-    else:
-        push_warning("EvolutionTrigger: creature %s does not expose level." % _creature)
-        return
+## True while the enemy is stunned and cannot act/fire.
+func is_stunned() -> bool:
+	return _is_flinching
 
-    # Retrieve happiness; creature may expose `happiness` property or `get_happiness()` method.
-    if _creature.has_method("get_happiness"):
-        current_happiness = _creature.call("get_happiness",)
-    elif _creature.has_property("happiness"):
-        current_happiness = _creature.happiness
-    else:
-        push_warning("EvolutionTrigger: creature %s does not expose happiness." % _creature)
-        return
+## 0..1 flash intensity for the enemy's sprite (blink on/off).
+func flash_intensity() -> float:
+	return 1.0 if _flash_count > 0 else 0.0
 
-    if current_level >= EVOLUTION_LEVEL_THRESHOLD and current_happiness >= EVOLUTION_HAPPINESS_THRESHOLD:
-        _perform_evolution()
+## Remaining stun time (for UI/telegraphing).
+func flinch_time_left() -> float:
+	return _flinch_left
 
-func _perform_evolution() -> void:
-    # Notify listeners.
-    emit_signal("evolved", _creature)
-
-    # Broadcast globally via EventBus.
-    if EventBus:
-        EventBus.emit_signal("creature_evolved", _creature)
-
-    # Invoke creature's own evolution logic.
-    if _creature.has_method("evolve"):
-        _creature.call("evolve")
-    else:
-        push_warning("EvolutionTrigger: creature %s does not have an `evolve` method." % _creature)
+## Accumulated burst damage in the current window (for debugging/telemetry).
+func buffered_damage() -> float:
+	return _damage_buffer.reduce(func(a, b): return a + b, 0.0)

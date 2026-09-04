@@ -1,52 +1,80 @@
-# CreatureStatDisplay.gd
-# This UI panel displays creature stats (hunger, happiness, level) for the player.
-# Feel: Makes creature needs visible to player, building on the existing Creature class
-#       and HUD UI framework.
-# Tunable constants:
-#   MAX_UPDATE_RATE_HZ: maximum stat updates per second (throttles UI refresh).
-#   UPDATE_INTERVAL: default time between forced refreshes (seconds).
-#   FONT_SIZE: point size for stat labels.
-# Note: This script builds on the existing EventBus signal "creature_stats_updated"
-#       emitted by the Creature class when its stats change.
+extends Label
+class_name DamagePopup
 
-extends Control
+# Floating damage numbers that spawn on enemy hits. Builds on the EventBus
+# damage-reporting flow and the existing Enemy class. Tunable via exports
+# and the wave profile so popup size/color scales with difficulty.
+# NOTE: intentionally a pure GDScript node (no .tscn) so it never depends
+# on a missing scene resource.
 
-# Tunable constants
-const MAX_UPDATE_RATE_HZ: int = 30  # updates per second
-@export var update_interval: float = 0.5  # seconds between forced refreshes (if no signal)
-@export var font_size: int = 24  # points, for label font size
+# === TUNABLES ===
+@export var font_size: int = 24
+@export var font_color: Color = Color(1, 0.9, 0.2, 1)
+@export var crit_color: Color = Color(1, 0.3, 0.2, 1)
+@export var lifetime: float = 1.2
+@export var rise_distance: float = 48.0
+@export var fade_curve: Curve = null
 
-# References to UI labels (assumes scene has these nodes)
-@onready var hunger_label: Label = $HungerLabel
-@onready var happiness_label: Label = $HappinessLabel
-@onready var level_label: Label = $LevelLabel
+var _elapsed: float = 0.0
+var _start_pos: Vector2 = Vector2.ZERO
+var _target_pos: Vector2 = Vector2.ZERO
+var _amount: int = 0
+var _is_crit: bool = false
 
-# Connect to the global EventBus for creature stat updates
 func _ready() -> void:
-    # Listen for stat changes broadcast by the Creature system
-    EventBus.connect("creature_stats_updated", Callable(self, "_on_creature_stats_updated"))
+    _apply_style()
+    _start_pos = global_position
+    _target_pos = global_position - Vector2.UP * rise_distance
+    if fade_curve == null:
+        fade_curve = Curve.create_from_points(
+            PackedVector2Array([Vector2(0, 1), Vector2(0.6, 1), Vector2(1, 0)]))
 
-    # Optional: set up a timer to poll in case the signal is missed (rare)
-    # (not used currently, kept for future expansion)
+func _apply_style() -> void:
+    add_theme_font_size_override("font_size", font_size)
+    add_theme_color_override("font_color", crit_color if _is_crit else font_color)
+    add_theme_color_override("font_color_shadow", Color.BLACK)
+    add_theme_constant_override("shadow_offset_x", 2)
+    add_theme_constant_override("shadow_offset_y", 2)
 
-# Called when the Creature emits a stats_updated signal.
-# The signal passes the Creature instance whose stats changed.
-func _on_creature_stats_updated(creature: Creature) -> void:
-    # Pull the latest values from the Creature (these are assumed to be exported or public)
-    var hunger: float = creature.hunger
-    var happiness: float = creature.happiness
-    var level: int = creature.level
+func spawn(world_pos: Vector2, amount: int, crit: bool = false) -> void:
+    global_position = world_pos
+    _start_pos = world_pos
+    _target_pos = world_pos - Vector2.UP * rise_distance
+    _amount = amount
+    _is_crit = crit
+    text = str(amount) + ("!" if crit else "")
+    _apply_style()
+    _elapsed = 0.0
 
-    # Update the UI labels (converted to string for display)
-    hunger_label.text = str(hunger)
-    happiness_label.text = str(happiness)
-    level_label.text = str(level)
+func _process(delta: float) -> void:
+    _elapsed += delta
+    var t: float = clampf(_elapsed / lifetime, 0.0, 1.0)
+    global_position = _start_pos.lerp(_target_pos, t)
+    var alpha: float = fade_curve.sample(1.0 - t) if fade_curve != null else (1.0 - t)
+    modulate.a = alpha
+    if _elapsed >= lifetime:
+        queue_free()
 
-    # Optional: apply color tint based on hunger level (tunable via constants)
-    # Example: red when hungry, green when happy
-    # This demonstrates a simple visual cue without adding new systems.
-    # (Color logic omitted for brevity; can be expanded later.)
+# === Popup spawner that listens for damage events ===
+extends Node
+class_name DamagePopupSpawner
 
-# End of file.
-# Feel: Adds clear visibility of creature needs, building on the existing Creature class
-#       and HUD UI framework.
+const _MAX_POPUPS: int = 64
+var _active: int = 0
+
+func _ready() -> void:
+    EventBus.enemy_hit.connect(_on_enemy_hit)
+
+func _on_enemy_hit(world_pos: Vector2, damage: int, crit: bool) -> void:
+    if _active >= _MAX_POPUPS:
+        return
+    var popup: DamagePopup = DamagePopup.new()
+    add_child(popup)
+    popup.spawn(world_pos, damage, crit)
+    _active += 1
+    popup.tree_exited.connect(func() -> void: _active -= 1)
+
+# Feel added: floating damage numbers on every hit, with crit emphasis.
+# Builds on EventBus.enemy_hit and the existing Enemy damage flow.
+# Fixed: no longer depends on a missing damage_popup.tscn — instantiates
+# the pure-GDScript DamagePopup node directly via DamagePopup.new().
