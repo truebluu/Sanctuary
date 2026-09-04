@@ -1,0 +1,121 @@
+[gd_scene load_steps=2 format=3 uid="uid://sanctuary_main"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main")
+
+[node name="Title" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 20.0
+offset_bottom = 60.0
+grow_horizontal = 2
+text = "SANCTUARY — Breeding Lab"
+horizontal_alignment = 1
+font_size = 24
+
+[node name="ParentA" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -230.0
+offset_top = 80.0
+offset_right = -10.0
+offset_bottom = 200.0
+grow_horizontal = 2
+
+[node name="ParentALabel" type="Label" parent="ParentA" unique_name_in_owner = true]
+layout_mode = 2
+text = "Parent A"
+horizontal_alignment = 1
+
+[node name="ParentB" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = 10.0
+offset_top = 80.0
+offset_right = 230.0
+offset_bottom = 200.0
+grow_horizontal = 2
+
+[node name="ParentBLabel" type="Label" parent="ParentB" unique_name_in_owner = true]
+layout_mode = 2
+text = "Parent B"
+horizontal_alignment = 1
+
+[node name="BreedButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 220.0
+offset_right = 100.0
+offset_bottom = 260.0
+grow_horizontal = 2
+text = "BREED"
+
+[node name="RerollButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 270.0
+offset_right = 100.0
+offset_bottom = 310.0
+grow_horizontal = 2
+text = "REROLL PARENTS"
+
+[node name="Offspring" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -230.0
+offset_top = 330.0
+offset_right = 230.0
+offset_bottom = 460.0
+grow_horizontal = 2
+
+[node name="OffspringLabel" type="Label" parent="Offspring" unique_name_in_owner = true]
+layout_mode = 2
+text = "Press BREED"
+horizontal_alignment = 1
+
+[node name="StatsLabel" type="Label" parent="." unique_name_in_owner = true]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -230.0
+offset_top = 470.0
+offset_right = 230.0
+offset_bottom = 600.0
+grow_horizontal = 2
+text = ""
+horizontal_alignment = 1
+
+[node name="GenLabel" type="Label" parent="." unique_name_in_owner = true]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -230.0
+offset_top = 610.0
+offset_right = 230.0
+offset_bottom = 650.0
+grow_horizontal = 2
+text = ""
+horizontal_alignment = 1
