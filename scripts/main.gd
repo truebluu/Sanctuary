@@ -23,6 +23,7 @@ const CreatureSanctuaryGardenScript = preload("res://scripts/sanct-069.gd")
 const Sanct071Script = preload("res://scripts/sanct-071.gd")
 const Sanct077Script = preload("res://scripts/sanct-077.gd")
 const Sanct080Script = preload("res://scripts/sanct-080.gd")
+const Sanct106Script = preload("res://scripts/sanct-106.gd")
 
 class SimpleCreature extends Node2D:
 	signal happiness_changed(value: float)
@@ -75,7 +76,7 @@ func _ready() -> void:
 	story_button.position = Vector2(10, 280)
 	story_button.pressed.connect(_on_share_story_pressed.bind(story_circle))
 	add_child(story_button)
-	var healing_touch := CreatureHealingTouch.new()
+	var healing_touch := Sanct106Script.new()
 	add_child(healing_touch)
 	healing_touch.creature_healed.connect(_on_creature_healed)
 	healing_touch.heal_pulse.connect(_on_heal_pulse)
