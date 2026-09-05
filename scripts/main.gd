@@ -15,6 +15,18 @@ extends Control
 const BASE_STATS := {"hp": 100, "attack": 50, "defense": 50, "speed": 60, "special": 40}
 const CreatureNamingSystemScript = preload("res://scripts/sanct-005.gd")
 const CreatureCodexScript = preload("res://scripts/sanct-010.gd")
+const CreatureMoodIndicatorScript = preload("res://scripts/sanct-019.gd")
+
+class SimpleCreature extends Node2D:
+	signal happiness_changed(value: float)
+	signal hunger_changed(value: float)
+	signal sickness_changed(value: float)
+	var happiness: float = 50.0
+	func get_happiness() -> float:
+		return happiness
+	func set_happiness(value: float) -> void:
+		happiness = value
+		happiness_changed.emit(value)
 
 func _ready() -> void:
 	breed_button.pressed.connect(_on_breed)
@@ -98,6 +110,22 @@ func _ready() -> void:
 	trait_button.position = Vector2(10, 480)
 	trait_button.pressed.connect(_on_trait_inherit_pressed)
 	add_child(trait_button)
+	var mood_creature := SimpleCreature.new()
+	mood_creature.name = "MoodCreature"
+	add_child(mood_creature)
+	var mood_indicator := CreatureMoodIndicatorScript.new()
+	mood_creature.add_child(mood_indicator)
+	mood_indicator.mood_changed.connect(_on_mood_changed)
+	var mood_button := Button.new()
+	mood_button.text = "Toggle Mood (Happy/Sad)"
+	mood_button.position = Vector2(10, 520)
+	mood_button.pressed.connect(func() -> void:
+		if mood_creature.happiness >= 70.0:
+			mood_creature.set_happiness(30.0)
+		else:
+			mood_creature.set_happiness(80.0)
+	)
+	add_child(mood_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
@@ -206,3 +234,14 @@ func _on_trait_inherit_pressed() -> void:
 	GameState.offspring = child
 	GameState.offspring_bred.emit(child)
 	_on_offspring_bred(child)
+
+func _on_mood_changed(new_mood: int) -> void:
+	var mood_name: String
+	match new_mood:
+		CreatureMoodIndicatorScript.Mood.HAPPY:
+			mood_name = "Happy"
+		CreatureMoodIndicatorScript.Mood.SAD:
+			mood_name = "Sad"
+		CreatureMoodIndicatorScript.Mood.ANGRY:
+			mood_name = "Angry"
+	stats_label.text = "Mood changed to %s" % mood_name
