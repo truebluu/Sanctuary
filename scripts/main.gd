@@ -220,6 +220,18 @@ func _ready() -> void:
 	garden_button.position = Vector2(10, 880)
 	garden_button.pressed.connect(func() -> void: garden.plant_decoration("flower_%d" % garden.get_decoration_count(), "flower"))
 	add_child(garden_button)
+	var social_bonds := CreatureSocialBonds.new()
+	add_child(social_bonds)
+	social_bonds.bond_changed.connect(func(a: StringName, b: StringName, level: int) -> void: stats_label.text = "Bond %s-%s reached level %d" % [a, b, level])
+	social_bonds.bond_bonus_applied.connect(func(creature: StringName, delta: float) -> void: stats_label.text = "Bond bonus: %s happiness +%.2f" % [creature, delta])
+	var bond_button := Button.new()
+	bond_button.text = "Show Social Bond"
+	bond_button.position = Vector2(10, 920)
+	bond_button.pressed.connect(func() -> void:
+		var level := social_bonds.get_bond_level(&"parent_a", &"parent_b")
+		stats_label.text = "Social bond level: %d" % level
+	)
+	add_child(bond_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
