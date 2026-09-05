@@ -20,6 +20,7 @@ const CreatureMoodIndicatorScript = preload("res://scripts/sanct-019.gd")
 const CreatureNamePersistenceScript = preload("res://scripts/sanct-024.gd")
 const SanctuaryWeatherEffectsScript = preload("res://scripts/sanct-029.gd")
 const CreatureSanctuaryGardenScript = preload("res://scripts/sanct-069.gd")
+const Sanct071Script = preload("res://scripts/sanct-071.gd")
 
 class SimpleCreature extends Node2D:
 	signal happiness_changed(value: float)
@@ -243,6 +244,9 @@ func _ready() -> void:
 		stats_label.text = "Social bond level: %d" % level
 	)
 	add_child(bond_button)
+	var sanct_071 := Sanct071Script.new()
+	add_child(sanct_071)
+	stats_label.text = "%s | %s" % [sanct_071.TITLE_1, sanct_071.TITLE_2]
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
