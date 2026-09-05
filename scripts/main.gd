@@ -126,6 +126,11 @@ func _ready() -> void:
 			mood_creature.set_happiness(80.0)
 	)
 	add_child(mood_button)
+	var type_chart_button := Button.new()
+	type_chart_button.text = "Show Type Chart"
+	type_chart_button.position = Vector2(10, 560)
+	type_chart_button.pressed.connect(_on_type_chart_pressed)
+	add_child(type_chart_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
@@ -245,3 +250,9 @@ func _on_mood_changed(new_mood: int) -> void:
 		CreatureMoodIndicatorScript.Mood.ANGRY:
 			mood_name = "Angry"
 	stats_label.text = "Mood changed to %s" % mood_name
+
+func _on_type_chart_pressed() -> void:
+	var attacker := CreatureTypeChart.Type.FIRE
+	var defender := CreatureTypeChart.Type.GRASS
+	var mult := CreatureTypeChart.get_effectiveness(attacker, defender)
+	stats_label.text = "%s vs %s: %.1fx" % [CreatureTypeChart.get_type_name(attacker), CreatureTypeChart.get_type_name(defender), mult]
