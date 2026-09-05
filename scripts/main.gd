@@ -41,6 +41,24 @@ func _ready() -> void:
 	gallery_button.position = Vector2(10, 240)
 	gallery_button.pressed.connect(_on_gallery_pressed.bind(art_gallery))
 	add_child(gallery_button)
+	var story_circle := CreatureStoryCircle.new()
+	add_child(story_circle)
+	story_circle.story_shared.connect(_on_story_shared)
+	var story_button := Button.new()
+	story_button.text = "Share a Story"
+	story_button.position = Vector2(10, 280)
+	story_button.pressed.connect(_on_share_story_pressed.bind(story_circle))
+	add_child(story_button)
+
+func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
+	var xp := circle.share_story(&"the_drake_legend", "epic")
+	if xp > 0:
+		stats_label.text = "Story shared! + %d XP (circle: %d/%d)" % [xp, circle.stories_in_circle(), CreatureStoryCircle.MAX_CONCURRENT_STORIES]
+	else:
+		stats_label.text = "Story circle is full or on cooldown."
+
+func _on_story_shared(story_id: StringName, xp_granted: int) -> void:
+	stats_label.text = "Story '%s' shared for %d XP!" % [story_id, xp_granted]
 
 func _on_groom_pressed(ritual: CreatureGroomingRitual) -> void:
 	if GameState.parent_a != null:
