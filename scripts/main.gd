@@ -93,6 +93,11 @@ func _ready() -> void:
 	friendship_button.position = Vector2(10, 440)
 	friendship_button.pressed.connect(func() -> void: friendship.add_friendship(10))
 	add_child(friendship_button)
+	var trait_button := Button.new()
+	trait_button.text = "Inherit Traits"
+	trait_button.position = Vector2(10, 480)
+	trait_button.pressed.connect(_on_trait_inherit_pressed)
+	add_child(trait_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
@@ -189,3 +194,15 @@ func _on_codex_creature_updated(creature_id: String, data: Dictionary) -> void:
 
 func _on_codex_cleared() -> void:
 	stats_label.text = "Codex cleared."
+
+func _on_trait_inherit_pressed() -> void:
+	if GameState.parent_a == null or GameState.parent_b == null:
+		stats_label.text = "Need two parents to inherit traits."
+		return
+	var child := TraitInheritance.inherit_traits(GameState.parent_a, GameState.parent_b)
+	if child == null:
+		stats_label.text = "Trait inheritance failed."
+		return
+	GameState.offspring = child
+	GameState.offspring_bred.emit(child)
+	_on_offspring_bred(child)
