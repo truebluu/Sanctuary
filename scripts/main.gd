@@ -24,6 +24,29 @@ func _ready() -> void:
 	habitat_zone.zone_type = SanctuaryHabitatZone.ZoneType.GARDEN
 	habitat_zone.growth_multiplier = 1.2
 	add_child(habitat_zone)
+	var grooming_ritual := CreatureGroomingRitual.new()
+	add_child(grooming_ritual)
+	grooming_ritual.ritual_started.connect(_on_grooming_started)
+	grooming_ritual.ritual_completed.connect(_on_grooming_completed)
+	grooming_ritual.ritual_failed.connect(_on_grooming_failed)
+	var groom_button := Button.new()
+	groom_button.text = "Groom Parent A"
+	groom_button.position = Vector2(10, 200)
+	groom_button.pressed.connect(_on_groom_pressed.bind(grooming_ritual))
+	add_child(groom_button)
+
+func _on_groom_pressed(ritual: CreatureGroomingRitual) -> void:
+	if GameState.parent_a != null:
+		ritual.start(GameState.parent_a)
+
+func _on_grooming_started(creature: CreatureGenome) -> void:
+	stats_label.text = "Grooming %s..." % creature.describe(GameState.rng)
+
+func _on_grooming_completed(trust_gained: int, energy_spent: int) -> void:
+	stats_label.text = "Grooming complete: +%d trust, -%d energy" % [trust_gained, energy_spent]
+
+func _on_grooming_failed(reason: String) -> void:
+	stats_label.text = "Grooming failed: %s" % reason
 
 func _on_reroll() -> void:
 	var a := GameState.new_random_parent("drake")
