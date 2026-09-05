@@ -193,6 +193,22 @@ func _ready() -> void:
 	stagger_button.position = Vector2(10, 760)
 	stagger_button.pressed.connect(func() -> void: stagger.register_damage(20.0))
 	add_child(stagger_button)
+	var energy := CreatureEnergy.new()
+	add_child(energy)
+	energy.energy_changed.connect(func(current: int, maximum: int) -> void: stats_label.text = "Energy: %d/%d" % [current, maximum])
+	energy.energy_depleted.connect(func() -> void: stats_label.text = "Creature exhausted!")
+	energy.energy_restored.connect(func(amount: int) -> void: stats_label.text = "Energy restored +%d" % amount)
+	energy.battle_readiness_changed.connect(func(readiness: float) -> void: stats_label.text = "Battle readiness: %.0f%%" % (readiness * 100.0))
+	var energy_spend_button := Button.new()
+	energy_spend_button.text = "Spend Energy"
+	energy_spend_button.position = Vector2(10, 800)
+	energy_spend_button.pressed.connect(func() -> void: energy.spend_energy())
+	add_child(energy_spend_button)
+	var nap_button := Button.new()
+	nap_button.text = "Take Nap"
+	nap_button.position = Vector2(10, 840)
+	nap_button.pressed.connect(func() -> void: energy.take_nap())
+	add_child(nap_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
