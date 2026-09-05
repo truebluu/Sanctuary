@@ -247,6 +247,22 @@ func _ready() -> void:
 	var sanct_071 := Sanct071Script.new()
 	add_child(sanct_071)
 	stats_label.text = "%s | %s" % [sanct_071.TITLE_1, sanct_071.TITLE_2]
+	var format_validator := preload("res://scripts/sanct-073.gd").new()
+	add_child(format_validator)
+	format_validator.line_validated.connect(func(line_index: int, title: String, description: String, ok: bool) -> void:
+		stats_label.text = "Line %d validated: %s - %s" % [line_index, title, description]
+	)
+	format_validator.validation_failed.connect(func(line_index: int, reason: String) -> void:
+		stats_label.text = "Validation failed on line %d: %s" % [line_index, reason]
+	)
+	var validate_button := Button.new()
+	validate_button.text = "Validate Format Line"
+	validate_button.position = Vector2(10, 1000)
+	validate_button.pressed.connect(func() -> void:
+		var test_line := "TITLE | description"
+		format_validator.validate_line(test_line, 0)
+	)
+	add_child(validate_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
