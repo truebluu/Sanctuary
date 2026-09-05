@@ -11,6 +11,7 @@ extends Control
 @onready var breed_button: Button = $BreedButton
 @onready var reroll_button: Button = $RerollButton
 @onready var gen_label: Label = $GenLabel
+var breeding_cooldown: BreedingCooldown
 
 const BASE_STATS := {"hp": 100, "attack": 50, "defense": 50, "speed": 60, "special": 40}
 const CreatureNamingSystemScript = preload("res://scripts/sanct-005.gd")
@@ -156,6 +157,15 @@ func _ready() -> void:
 			weather_effects._on_weather_changed("rain")
 	)
 	add_child(weather_button)
+	var breeding_cooldown_node := BreedingCooldown.new()
+	breeding_cooldown = breeding_cooldown_node
+	add_child(breeding_cooldown_node)
+	breeding_cooldown_node.cooldown_started.connect(func(creature_id: StringName, duration: float) -> void:
+		stats_label.text = "Cooldown started for %s (%.1fs)" % [creature_id, duration]
+	)
+	breeding_cooldown_node.cooldown_expired.connect(func(creature_id: StringName) -> void:
+		stats_label.text = "Cooldown expired for %s" % creature_id
+	)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
@@ -193,9 +203,14 @@ func _on_parents_changed(a: CreatureGenome, b: CreatureGenome) -> void:
 	gen_label.text = ""
 
 func _on_breed() -> void:
+	if not breeding_cooldown.can_breed("parent_a") or not breeding_cooldown.can_breed("parent_b"):
+		stats_label.text = "Breeding on cooldown. Wait for parents to rest."
+		return
 	var child := GameState.breed()
 	if child == null:
 		return
+	breeding_cooldown.start_cooldown("parent_a")
+	breeding_cooldown.start_cooldown("parent_b")
 	_on_offspring_bred(child)
 
 func _on_offspring_bred(child: CreatureGenome) -> void:
