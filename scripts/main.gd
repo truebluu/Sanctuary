@@ -14,6 +14,7 @@ extends Control
 
 const BASE_STATS := {"hp": 100, "attack": 50, "defense": 50, "speed": 60, "special": 40}
 const CreatureNamingSystemScript = preload("res://scripts/sanct-005.gd")
+const CreatureCodexScript = preload("res://scripts/sanct-010.gd")
 
 func _ready() -> void:
 	breed_button.pressed.connect(_on_breed)
@@ -71,6 +72,16 @@ func _ready() -> void:
 	name_button.position = Vector2(10, 360)
 	name_button.pressed.connect(_on_name_pressed.bind(naming_system))
 	add_child(name_button)
+	var codex := CreatureCodexScript.new()
+	add_child(codex)
+	codex.creature_discovered.connect(_on_codex_creature_discovered)
+	codex.creature_updated.connect(_on_codex_creature_updated)
+	codex.codex_cleared.connect(_on_codex_cleared)
+	var codex_button := Button.new()
+	codex_button.text = "Register Parent A in Codex"
+	codex_button.position = Vector2(10, 400)
+	codex_button.pressed.connect(_on_codex_pressed.bind(codex))
+	add_child(codex_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
@@ -148,3 +159,22 @@ func _on_name_pressed(naming) -> void:
 
 func _on_creature_named(creature_id: String, new_name: String) -> void:
 	stats_label.text = "Creature %s named %s" % [creature_id, new_name]
+
+func _on_codex_pressed(codex) -> void:
+	if GameState.parent_a != null:
+		var data := {
+			"name": "Parent A",
+			"species": "drake",
+			"stats": {"hp": 100, "attack": 50, "defense": 50, "speed": 60, "special": 40},
+			"lore": "Discovered in the Breeding Lab."
+		}
+		codex.register_creature("parent_a", data)
+
+func _on_codex_creature_discovered(creature_id: String, data: Dictionary) -> void:
+	stats_label.text = "Codex: discovered %s (%s)" % [creature_id, data.get("name", creature_id)]
+
+func _on_codex_creature_updated(creature_id: String, data: Dictionary) -> void:
+	stats_label.text = "Codex: updated %s" % creature_id
+
+func _on_codex_cleared() -> void:
+	stats_label.text = "Codex cleared."
