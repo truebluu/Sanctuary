@@ -20,6 +20,10 @@ func _ready() -> void:
 	GameState.parents_changed.connect(_on_parents_changed)
 	GameState.offspring_bred.connect(_on_offspring_bred)
 	_on_reroll()
+	var habitat_zone := SanctuaryHabitatZone.new()
+	habitat_zone.zone_type = SanctuaryHabitatZone.ZoneType.GARDEN
+	habitat_zone.growth_multiplier = 1.2
+	add_child(habitat_zone)
 
 func _on_reroll() -> void:
 	var a := GameState.new_random_parent("drake")
