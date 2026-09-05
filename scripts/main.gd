@@ -13,6 +13,7 @@ extends Control
 @onready var gen_label: Label = $GenLabel
 
 const BASE_STATS := {"hp": 100, "attack": 50, "defense": 50, "speed": 60, "special": 40}
+const CreatureNamingSystemScript = preload("res://scripts/sanct-005.gd")
 
 func _ready() -> void:
 	breed_button.pressed.connect(_on_breed)
@@ -62,6 +63,14 @@ func _ready() -> void:
 	heal_button.position = Vector2(10, 320)
 	heal_button.pressed.connect(_on_heal_zone_pressed.bind(healing_touch))
 	add_child(heal_button)
+	var naming_system := CreatureNamingSystemScript.new()
+	add_child(naming_system)
+	naming_system.creature_named.connect(_on_creature_named)
+	var name_button := Button.new()
+	name_button.text = "Name Parent A"
+	name_button.position = Vector2(10, 360)
+	name_button.pressed.connect(_on_name_pressed.bind(naming_system))
+	add_child(name_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
@@ -127,3 +136,15 @@ func _on_creature_healed(creature: Node, amount: float) -> void:
 
 func _on_heal_pulse(creature: Node) -> void:
 	pass
+
+func _on_name_pressed(naming) -> void:
+	if GameState.parent_a != null:
+		var id := "parent_a"
+		var new_name := "Buddy"
+		if naming.set_creature_name(id, new_name):
+			stats_label.text = "Named %s: %s" % [id, naming.get_creature_name(id)]
+		else:
+			stats_label.text = "Could not name %s" % id
+
+func _on_creature_named(creature_id: String, new_name: String) -> void:
+	stats_label.text = "Creature %s named %s" % [creature_id, new_name]
