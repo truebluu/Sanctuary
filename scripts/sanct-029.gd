@@ -21,7 +21,7 @@ func _ready() -> void:
 	var weather_system = get_node_or_null("/root/WeatherSystem")
 	if weather_system:
 		if weather_system.has_signal("weather_changed"):
-			weather_system.connect("weather_changed", Callable(self, "_on_weather_changed"))
+			weather_system.weather_changed.connect(_on_weather_changed)
 		# Initialize with current weather
 		if weather_system.has_method("get_current_weather"):
 			_current_weather = weather_system.get_current_weather()
@@ -37,8 +37,8 @@ func _ready() -> void:
 
 	# Connect to creature group changes
 	# We'll use the group "creatures" (existing sanctuary group)
-	get_tree().connect("node_added", Callable(self, "_on_node_added"))
-	get_tree().connect("node_removed", Callable(self, "_on_node_removed"))
+	get_tree().node_added.connect(_on_node_added)
+	get_tree().node_removed.connect(_on_node_removed)
 
 func _on_weather_changed(new_weather: String) -> void:
 	_current_weather = new_weather
