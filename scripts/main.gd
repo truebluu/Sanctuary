@@ -134,6 +134,15 @@ func _ready() -> void:
 	add_child(type_chart_button)
 	var name_persistence := CreatureNamePersistenceScript.new()
 	add_child(name_persistence)
+	var hunger_decay_script := preload("res://scripts/sanct-026.gd")
+	var hunger_decay := hunger_decay_script.new()
+	mood_creature.add_child(hunger_decay)
+	hunger_decay.hunger_changed.connect(_on_hunger_changed)
+	var feed_button := Button.new()
+	feed_button.text = "Feed Creature"
+	feed_button.position = Vector2(10, 600)
+	feed_button.pressed.connect(func() -> void: hunger_decay.feed(20.0))
+	add_child(feed_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
@@ -259,3 +268,6 @@ func _on_type_chart_pressed() -> void:
 	var defender := CreatureTypeChart.Type.GRASS
 	var mult := CreatureTypeChart.get_effectiveness(attacker, defender)
 	stats_label.text = "%s vs %s: %.1fx" % [CreatureTypeChart.get_type_name(attacker), CreatureTypeChart.get_type_name(defender), mult]
+
+func _on_hunger_changed(new_value: float) -> void:
+	stats_label.text = "Hunger: %.1f" % new_value
