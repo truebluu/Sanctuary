@@ -209,6 +209,17 @@ func _ready() -> void:
 	nap_button.position = Vector2(10, 840)
 	nap_button.pressed.connect(func() -> void: energy.take_nap())
 	add_child(nap_button)
+	var garden := CreatureGarden.new()
+	add_child(garden)
+	garden.decoration_planted.connect(_on_garden_decoration_planted)
+	garden.decoration_grown.connect(_on_garden_decoration_grown)
+	garden.buff_applied.connect(_on_garden_buff_applied)
+	garden.garden_full.connect(_on_garden_full)
+	var garden_button := Button.new()
+	garden_button.text = "Plant Garden Decoration"
+	garden_button.position = Vector2(10, 880)
+	garden_button.pressed.connect(func() -> void: garden.plant_decoration("flower_%d" % garden.get_decoration_count(), "flower"))
+	add_child(garden_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
@@ -357,3 +368,15 @@ func _on_stagger_flinch_started(target: Node) -> void:
 
 func _on_stagger_flinch_ended(target: Node) -> void:
 	stats_label.text = "Enemy recovered from stagger."
+
+func _on_garden_decoration_planted(id: String, type: String) -> void:
+	stats_label.text = "Planted %s (%s)" % [id, type]
+
+func _on_garden_decoration_grown(id: String, type: String, growth: float) -> void:
+	stats_label.text = "Garden %s grew to %.0f%%" % [id, growth * 100.0]
+
+func _on_garden_buff_applied(creature: Node, mood: float, health: float) -> void:
+	stats_label.text = "Garden buff applied: +%.2f mood, +%.2f health" % [mood, health]
+
+func _on_garden_full() -> void:
+	stats_label.text = "Garden is full!"
