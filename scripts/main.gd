@@ -69,6 +69,7 @@ func _ready() -> void:
 	var story_circle := CreatureStoryCircle.new()
 	add_child(story_circle)
 	story_circle.story_shared.connect(_on_story_shared)
+	story_circle.circle_completed.connect(_on_story_circle_completed)
 	var story_button := Button.new()
 	story_button.text = "Share a Story"
 	story_button.position = Vector2(10, 280)
@@ -296,6 +297,9 @@ func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 
 func _on_story_shared(story_id: StringName, xp_granted: int) -> void:
 	stats_label.text = "Story '%s' shared for %d XP!" % [story_id, xp_granted]
+
+func _on_story_circle_completed(stories_collected: int) -> void:
+	stats_label.text = "Story circle completed with %d stories!" % stories_collected
 
 func _on_groom_pressed(ritual: CreatureGroomingRitual) -> void:
 	if GameState.parent_a != null:
