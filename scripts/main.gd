@@ -22,6 +22,7 @@ const SanctuaryWeatherEffectsScript = preload("res://scripts/sanct-029.gd")
 const CreatureSanctuaryGardenScript = preload("res://scripts/sanct-069.gd")
 const Sanct071Script = preload("res://scripts/sanct-071.gd")
 const Sanct077Script = preload("res://scripts/sanct-077.gd")
+const Sanct080Script = preload("res://scripts/sanct-080.gd")
 
 class SimpleCreature extends Node2D:
 	signal happiness_changed(value: float)
@@ -269,6 +270,23 @@ func _ready() -> void:
 	)
 	add_child(validate_button)
 
+	# Wire CreatureSanctuaryHealingGarden
+	var healing_garden := Sanct080Script.new()
+	add_child(healing_garden)
+	healing_garden.creature_healed.connect(_on_healing_garden_creature_healed)
+	healing_garden.garden_depleted.connect(_on_healing_garden_depleted)
+	healing_garden.garden_recharged.connect(_on_healing_garden_recharged)
+	var garden_toggle_button := Button.new()
+	garden_toggle_button.text = "Toggle Healing Garden"
+	garden_toggle_button.position = Vector2(10, 1040)
+	garden_toggle_button.pressed.connect(func() -> void: healing_garden.set_active(not healing_garden._is_active))
+	add_child(garden_toggle_button)
+	var garden_recharge_button := Button.new()
+	garden_recharge_button.text = "Recharge Healing Garden"
+	garden_recharge_button.position = Vector2(10, 1080)
+	garden_recharge_button.pressed.connect(func() -> void: healing_garden.recharge())
+	add_child(garden_recharge_button)
+
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
 	if xp > 0:
@@ -437,3 +455,12 @@ func _on_sanctuary_creature_resting(creature_id: String) -> void:
 
 func _on_sanctuary_bonding_started(creature_id: String) -> void:
 	stats_label.text = "%s started bonding in the sanctuary garden." % creature_id
+
+func _on_healing_garden_creature_healed(creature: Node, amount: float) -> void:
+	stats_label.text = "Healing garden healed a creature for %.1f HP!" % amount
+
+func _on_healing_garden_depleted() -> void:
+	stats_label.text = "Healing garden stamina depleted!"
+
+func _on_healing_garden_recharged() -> void:
+	stats_label.text = "Healing garden recharged and ready."
