@@ -49,6 +49,15 @@ func _ready() -> void:
 	story_button.position = Vector2(10, 280)
 	story_button.pressed.connect(_on_share_story_pressed.bind(story_circle))
 	add_child(story_button)
+	var healing_touch := CreatureHealingTouch.new()
+	add_child(healing_touch)
+	healing_touch.creature_healed.connect(_on_creature_healed)
+	healing_touch.heal_pulse.connect(_on_heal_pulse)
+	var heal_button := Button.new()
+	heal_button.text = "Toggle Healing Zone"
+	heal_button.position = Vector2(10, 320)
+	heal_button.pressed.connect(_on_heal_zone_pressed.bind(healing_touch))
+	add_child(heal_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
@@ -103,3 +112,14 @@ func _on_offspring_bred(child: CreatureGenome) -> void:
 func _on_gallery_pressed(gallery: CreatureArtGallery) -> void:
 	if GameState.parent_a != null:
 		gallery.display_creature()
+
+func _on_heal_zone_pressed(healing: CreatureHealingTouch) -> void:
+	var active: bool = not healing.visible
+	healing.set_active(active)
+	stats_label.text = "Healing Zone: %s (targets: %d)" % ["ON" if active else "OFF", healing.get_active_count()]
+
+func _on_creature_healed(creature: Node, amount: float) -> void:
+	stats_label.text = "Healed a creature for %.1f HP!" % amount
+
+func _on_heal_pulse(creature: Node) -> void:
+	pass
