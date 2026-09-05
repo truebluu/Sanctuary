@@ -16,6 +16,7 @@ const BASE_STATS := {"hp": 100, "attack": 50, "defense": 50, "speed": 60, "speci
 const CreatureNamingSystemScript = preload("res://scripts/sanct-005.gd")
 const CreatureCodexScript = preload("res://scripts/sanct-010.gd")
 const CreatureMoodIndicatorScript = preload("res://scripts/sanct-019.gd")
+const CreatureNamePersistenceScript = preload("res://scripts/sanct-024.gd")
 
 class SimpleCreature extends Node2D:
 	signal happiness_changed(value: float)
@@ -131,6 +132,8 @@ func _ready() -> void:
 	type_chart_button.position = Vector2(10, 560)
 	type_chart_button.pressed.connect(_on_type_chart_pressed)
 	add_child(type_chart_button)
+	var name_persistence := CreatureNamePersistenceScript.new()
+	add_child(name_persistence)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
