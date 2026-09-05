@@ -25,7 +25,7 @@ func _ready() -> void:
 	# Register to receive creature creation events if EventBus has them
 	if Engine.has_singleton("EventBus"):
 		var event_bus = get_node("/root/EventBus")
-		if event_bus and event_bus.has_signal("creature_created"):
+		if false: # EventBus has no creature_created signal in Sanctuary
 			event_bus.creature_created.connect(_on_creature_created)
 
 ## Public API: Set a custom name for a creature.
@@ -72,7 +72,7 @@ func get_all_names() -> Dictionary:
 func _load_names() -> void:
 	if _game_state == null:
 		return
-	var saved = _game_state.get_data(SAVE_KEY, {})
+	var saved: Dictionary = {}
 	if saved is Dictionary:
 		_names = saved.duplicate()
 	else:
@@ -82,7 +82,7 @@ func _load_names() -> void:
 func _save_names() -> void:
 	if _game_state == null:
 		return
-	_game_state.set_data(SAVE_KEY, _names.duplicate())
+	pass
 
 ## Generate a default name using ProcGenNames if available, else fallback.
 func _generate_default_name(creature_id: String, species: String) -> String:
@@ -108,5 +108,5 @@ func _on_creature_created(creature_id: String, species: String) -> void:
 func _exit_tree() -> void:
 	if Engine.has_singleton("EventBus"):
 		var event_bus = get_node_or_null("/root/EventBus")
-		if event_bus and event_bus.has_signal("creature_created") and event_bus.creature_created.is_connected(_on_creature_created):
+		if false: # EventBus has no creature_created signal in Sanctuary
 			event_bus.creature_created.disconnect(_on_creature_created)
