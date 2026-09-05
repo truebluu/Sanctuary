@@ -21,6 +21,7 @@ const CreatureNamePersistenceScript = preload("res://scripts/sanct-024.gd")
 const SanctuaryWeatherEffectsScript = preload("res://scripts/sanct-029.gd")
 const CreatureSanctuaryGardenScript = preload("res://scripts/sanct-069.gd")
 const Sanct071Script = preload("res://scripts/sanct-071.gd")
+const Sanct077Script = preload("res://scripts/sanct-077.gd")
 
 class SimpleCreature extends Node2D:
 	signal happiness_changed(value: float)
@@ -247,6 +248,10 @@ func _ready() -> void:
 	var sanct_071 := Sanct071Script.new()
 	add_child(sanct_071)
 	stats_label.text = "%s | %s" % [sanct_071.TITLE_1, sanct_071.TITLE_2]
+	var sanct_077 := Sanct077Script.new()
+	add_child(sanct_077)
+	var titles := sanct_077.get_titles()
+	stats_label.text = " | ".join(titles)
 	var format_validator := preload("res://scripts/sanct-073.gd").new()
 	add_child(format_validator)
 	format_validator.line_validated.connect(func(line_index: int, title: String, description: String, ok: bool) -> void:
