@@ -19,6 +19,7 @@ const CreatureCodexScript = preload("res://scripts/sanct-010.gd")
 const CreatureMoodIndicatorScript = preload("res://scripts/sanct-019.gd")
 const CreatureNamePersistenceScript = preload("res://scripts/sanct-024.gd")
 const SanctuaryWeatherEffectsScript = preload("res://scripts/sanct-029.gd")
+const CreatureSanctuaryGardenScript = preload("res://scripts/sanct-069.gd")
 
 class SimpleCreature extends Node2D:
 	signal happiness_changed(value: float)
@@ -220,6 +221,16 @@ func _ready() -> void:
 	garden_button.position = Vector2(10, 880)
 	garden_button.pressed.connect(func() -> void: garden.plant_decoration("flower_%d" % garden.get_decoration_count(), "flower"))
 	add_child(garden_button)
+	var sanctuary_garden := CreatureSanctuaryGardenScript.new()
+	add_child(sanctuary_garden)
+	sanctuary_garden.plant_grown.connect(_on_sanctuary_plant_grown)
+	sanctuary_garden.creature_resting.connect(_on_sanctuary_creature_resting)
+	sanctuary_garden.bonding_started.connect(_on_sanctuary_bonding_started)
+	var sanctuary_garden_button := Button.new()
+	sanctuary_garden_button.text = "Plant Sanctuary Seed"
+	sanctuary_garden_button.position = Vector2(10, 960)
+	sanctuary_garden_button.pressed.connect(func() -> void: sanctuary_garden.plant_seed())
+	add_child(sanctuary_garden_button)
 	var social_bonds := CreatureSocialBonds.new()
 	add_child(social_bonds)
 	social_bonds.bond_changed.connect(func(a: StringName, b: StringName, level: int) -> void: stats_label.text = "Bond %s-%s reached level %d" % [a, b, level])
@@ -392,3 +403,12 @@ func _on_garden_buff_applied(creature: Node, mood: float, health: float) -> void
 
 func _on_garden_full() -> void:
 	stats_label.text = "Garden is full!"
+
+func _on_sanctuary_plant_grown(plant_id: int) -> void:
+	stats_label.text = "Sanctuary plant %d grew!" % plant_id
+
+func _on_sanctuary_creature_resting(creature_id: String) -> void:
+	stats_label.text = "%s is resting in the sanctuary garden." % creature_id
+
+func _on_sanctuary_bonding_started(creature_id: String) -> void:
+	stats_label.text = "%s started bonding in the sanctuary garden." % creature_id
