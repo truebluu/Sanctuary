@@ -82,6 +82,17 @@ func _ready() -> void:
 	codex_button.position = Vector2(10, 400)
 	codex_button.pressed.connect(_on_codex_pressed.bind(codex))
 	add_child(codex_button)
+	var friendship := CreatureFriendship.new()
+	add_child(friendship)
+	friendship.friendship_changed.connect(func(current: int, max_val: int) -> void: stats_label.text = "Friendship: %d/%d" % [current, max_val])
+	friendship.tier_changed.connect(func(new_tier: int, old_tier: int) -> void: stats_label.text = "Friendship tier %d (was %d)" % [new_tier, old_tier])
+	friendship.ability_unlocked.connect(func(ability_id: String) -> void: stats_label.text = "Unlocked ability: %s" % ability_id)
+	friendship.evolution_path_unlocked.connect(func(path_id: String) -> void: stats_label.text = "Unlocked evolution path: %s" % path_id)
+	var friendship_button := Button.new()
+	friendship_button.text = "Increase Friendship"
+	friendship_button.position = Vector2(10, 440)
+	friendship_button.pressed.connect(func() -> void: friendship.add_friendship(10))
+	add_child(friendship_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
