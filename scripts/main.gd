@@ -17,6 +17,7 @@ const CreatureNamingSystemScript = preload("res://scripts/sanct-005.gd")
 const CreatureCodexScript = preload("res://scripts/sanct-010.gd")
 const CreatureMoodIndicatorScript = preload("res://scripts/sanct-019.gd")
 const CreatureNamePersistenceScript = preload("res://scripts/sanct-024.gd")
+const SanctuaryWeatherEffectsScript = preload("res://scripts/sanct-029.gd")
 
 class SimpleCreature extends Node2D:
 	signal happiness_changed(value: float)
@@ -143,6 +144,18 @@ func _ready() -> void:
 	feed_button.position = Vector2(10, 600)
 	feed_button.pressed.connect(func() -> void: hunger_decay.feed(20.0))
 	add_child(feed_button)
+	var weather_effects := SanctuaryWeatherEffectsScript.new()
+	add_child(weather_effects)
+	var weather_button := Button.new()
+	weather_button.text = "Toggle Rain/Sun"
+	weather_button.position = Vector2(10, 640)
+	weather_button.pressed.connect(func() -> void:
+		if weather_effects._current_weather == "rain":
+			weather_effects._on_weather_changed("sun")
+		else:
+			weather_effects._on_weather_changed("rain")
+	)
+	add_child(weather_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
