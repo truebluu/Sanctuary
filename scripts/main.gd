@@ -166,6 +166,21 @@ func _ready() -> void:
 	breeding_cooldown_node.cooldown_expired.connect(func(creature_id: StringName) -> void:
 		stats_label.text = "Cooldown expired for %s" % creature_id
 	)
+	# Sanctuary Expansion Cost wiring
+	var expansion_cost := SanctuaryExpansionCost.new()
+	expansion_cost.balance_changed.connect(_on_expansion_balance_changed)
+	expansion_cost.tier_unlocked.connect(_on_expansion_tier_unlocked)
+	expansion_cost.expansion_blocked.connect(_on_expansion_blocked)
+	var award_credits_button := Button.new()
+	award_credits_button.text = "Award Activity Credits"
+	award_credits_button.position = Vector2(10, 680)
+	award_credits_button.pressed.connect(func() -> void: expansion_cost.award_activity_credits(true))
+	add_child(award_credits_button)
+	var expand_button := Button.new()
+	expand_button.text = "Expand Sanctuary"
+	expand_button.position = Vector2(10, 720)
+	expand_button.pressed.connect(func() -> void: expansion_cost.expand())
+	add_child(expand_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
@@ -299,3 +314,12 @@ func _on_type_chart_pressed() -> void:
 
 func _on_hunger_changed(new_value: float) -> void:
 	stats_label.text = "Hunger: %.1f" % new_value
+
+func _on_expansion_balance_changed(new_balance: int) -> void:
+	stats_label.text = "Sanctuary Credits: %d" % new_balance
+
+func _on_expansion_tier_unlocked(new_tier: int, cost_paid: int) -> void:
+	stats_label.text = "Sanctuary expanded to tier %d (cost %d credits)" % [new_tier, cost_paid]
+
+func _on_expansion_blocked(reason: String) -> void:
+	stats_label.text = "Expansion blocked: %s" % reason
