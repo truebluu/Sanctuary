@@ -181,6 +181,18 @@ func _ready() -> void:
 	expand_button.position = Vector2(10, 720)
 	expand_button.pressed.connect(func() -> void: expansion_cost.expand())
 	add_child(expand_button)
+	var stagger_dummy := RigidBody2D.new()
+	stagger_dummy.name = "StaggerDummy"
+	add_child(stagger_dummy)
+	var stagger := EnemyStagger.new()
+	stagger_dummy.add_child(stagger)
+	stagger.flinch_started.connect(_on_stagger_flinch_started)
+	stagger.flinch_ended.connect(_on_stagger_flinch_ended)
+	var stagger_button := Button.new()
+	stagger_button.text = "Stagger Burst"
+	stagger_button.position = Vector2(10, 760)
+	stagger_button.pressed.connect(func() -> void: stagger.register_damage(20.0))
+	add_child(stagger_button)
 
 func _on_share_story_pressed(circle: CreatureStoryCircle) -> void:
 	var xp := circle.share_story(&"the_drake_legend", "epic")
@@ -323,3 +335,9 @@ func _on_expansion_tier_unlocked(new_tier: int, cost_paid: int) -> void:
 
 func _on_expansion_blocked(reason: String) -> void:
 	stats_label.text = "Expansion blocked: %s" % reason
+
+func _on_stagger_flinch_started(target: Node) -> void:
+	stats_label.text = "Enemy staggered!"
+
+func _on_stagger_flinch_ended(target: Node) -> void:
+	stats_label.text = "Enemy recovered from stagger."
