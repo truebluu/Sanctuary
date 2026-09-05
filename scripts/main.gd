@@ -34,6 +34,13 @@ func _ready() -> void:
 	groom_button.position = Vector2(10, 200)
 	groom_button.pressed.connect(_on_groom_pressed.bind(grooming_ritual))
 	add_child(groom_button)
+	var art_gallery := CreatureArtGallery.new()
+	add_child(art_gallery)
+	var gallery_button := Button.new()
+	gallery_button.text = "Show Art Gallery"
+	gallery_button.position = Vector2(10, 240)
+	gallery_button.pressed.connect(_on_gallery_pressed.bind(art_gallery))
+	add_child(gallery_button)
 
 func _on_groom_pressed(ritual: CreatureGroomingRitual) -> void:
 	if GameState.parent_a != null:
@@ -74,3 +81,7 @@ func _on_offspring_bred(child: CreatureGenome) -> void:
 		lines.append("%s: %d" % [s.capitalize(), power.get(s, 0)])
 	stats_label.text = "\n".join(lines)
 	gen_label.text = "Generation %d" % child.generation
+
+func _on_gallery_pressed(gallery: CreatureArtGallery) -> void:
+	if GameState.parent_a != null:
+		gallery.display_creature()
