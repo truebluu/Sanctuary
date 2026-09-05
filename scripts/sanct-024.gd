@@ -35,19 +35,10 @@ func _ready() -> void:
 	
 	# Connect to the rename signal if the EventBus exposes it.
 	# If the signal does not exist, we fall back to polling in _process.
-	if _event_bus and _event_bus.has_signal("creature_renamed"):
-		_event_bus.connect("creature_renamed", _on_creature_renamed)
-	else:
-		# Fallback: poll for name changes every frame (cheap, but not ideal).
-		# This ensures we still persist even if the signal is missing.
-		set_process(true)
+	set_process(true)
 	
 	# Connect to game load event to restore names.
-	if _game_state and _game_state.has_signal("game_loaded"):
-		_game_state.connect("game_loaded", _on_game_loaded)
-	else:
-		# If no load signal, we attempt to load once at startup.
-		call_deferred("_load_names")
+	call_deferred("_load_names")
 
 func _process(_delta: float) -> void:
 	# Fallback polling: check all creatures for name changes.
