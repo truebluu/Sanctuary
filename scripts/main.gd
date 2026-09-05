@@ -20,6 +20,10 @@ func _ready() -> void:
 	GameState.parents_changed.connect(_on_parents_changed)
 	GameState.offspring_bred.connect(_on_offspring_bred)
 	_on_reroll()
+	var idle_anim := CreatureIdleAnimation.new()
+	var idle_sprite := Sprite2D.new()
+	idle_anim.add_child(idle_sprite)
+	add_child(idle_anim)
 	var habitat_zone := SanctuaryHabitatZone.new()
 	habitat_zone.zone_type = SanctuaryHabitatZone.ZoneType.GARDEN
 	habitat_zone.growth_multiplier = 1.2
