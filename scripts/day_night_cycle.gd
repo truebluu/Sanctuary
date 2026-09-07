@@ -15,7 +15,12 @@ extends Node
 ## HabitatSystem's environment_changed signal so biome changes can adjust the
 ## cycle speed.
 
-signal time_of_day_changed(is_day: bool)
+## Emitted whenever the ambient clock crosses a day/night boundary.
+## Carries the normalized time-of-day fraction 0.0 (midnight) .. 1.0 (midnight).
+## Both wired consumers (sanct-009:98, sanct-020:89) interpret this arg as a
+## 0-1 fraction; emitting a bool would coerce to 1.0/0.0 and mis-classify
+## daytime as night. Emit the fraction, not a bool.
+signal time_of_day_changed(time_of_day: float)
 
 @export var cycle_duration_seconds: float = 300.0
 @export var day_brightness: float = 1.0
@@ -30,13 +35,10 @@ const SECONDS_PER_HOUR: float = 3600.0
 
 var _time_seconds: float = 0.0
 var _was_day: bool = true
-var _creatures: Array[Node] = []
 
 func _ready() -> void:
 	_time_seconds = day_start_hour * SECONDS_PER_HOUR
 	_was_day = _is_day(_time_seconds)
-	# Collect creatures in the "creatures" group so we can notify them on change.
-	_creatures = get_tree().get_nodes_in_group("creatures")
 
 func _process(delta: float) -> void:
 	var prev_time: float = _time_seconds
@@ -45,9 +47,11 @@ func _process(delta: float) -> void:
 	var is_day_now: bool = _is_day(_time_seconds)
 	if is_day_now != _was_day:
 		_was_day = is_day_now
-		time_of_day_changed.emit(is_day_now)
+		time_of_day_changed.emit(get_time_of_day())
 		# Notify each creature in the group so they can adjust their behavior.
-		for creature in _creatures:
+		# Query the group lazily here (not once in _ready) — in _ready the main
+		# scene isn't loaded yet, so a cached snapshot is permanently empty.
+		for creature in get_tree().get_nodes_in_group("creatures"):
 			if is_instance_valid(creature) and creature.has_method("on_time_of_day_changed"):
 				creature.on_time_of_day_changed(is_day_now)
 
@@ -59,20 +63,13 @@ func get_time_of_day() -> float:
 	return _time_seconds / (HOURS_PER_DAY * SECONDS_PER_HOUR)
 
 func get_brightness() -> float:
+	# Brightest at noon (t=0.5), darkest at midnight (t=0 or 1): a triangular
+	# curve across the day peak. (Previously the day branch returned the dark
+	# end at dawn/dusk and the night branch returned the bright end at midnight
+	# — inverted.)
 	var t: float = get_time_of_day()
-	var day_t: float = day_start_hour / HOURS_PER_DAY
-	var night_t: float = night_start_hour / HOURS_PER_DAY
-
-	if t >= day_t and t < night_t:
-		var day_progress: float = (t - day_t) / (night_t - day_t)
-		return lerp(night_brightness, day_brightness, day_progress)
-	else:
-		var night_progress: float = 0.0
-		if t < day_t:
-			night_progress = t / day_t
-		else:
-			night_progress = (t - night_t) / (1.0 - night_t)
-		return lerp(day_brightness, night_brightness, night_progress)
+	var phase: float = absf(t - 0.5) / 0.5
+	return lerp(day_brightness, night_brightness, phase)
 
 func get_spawn_multiplier() -> float:
 	var t: float = get_time_of_day()
