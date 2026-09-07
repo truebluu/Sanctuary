@@ -1,7 +1,7 @@
 # Minimal test for DecorationSystem
 extends SceneTree
 
-func _ready() -> void:
+func _initialize() -> void:
 	print("=== Minimal DecorationSystem Test ===")
 	var ds := DecorationSystem.new(5, 5, 100.0)
 	
