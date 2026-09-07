@@ -4,6 +4,19 @@ extends Node
 ## Builds on WeatherSystem, DayNightCycle, and CreatureNeeds.
 ## Adds feel: weather makes sanctuary alive, creatures react to environment.
 
+## Single-instance guard: this script's contract is that exactly ONE instance
+## exists and connects to the WeatherSystem's weather_changed signal. A second
+## instance would double-connect and double-apply every happiness/hunger/energy
+## modifier to the "creatures" group. Self-destruct instead of double-applying.
+static var _instance: SanctuaryWeatherEffects = null
+
+func _init() -> void:
+	if _instance != null and _instance != self and is_instance_valid(_instance):
+		push_warning("SanctuaryWeatherEffects: duplicate instance detected — self-removing to prevent double-apply.")
+		queue_free()
+		return
+	_instance = self
+
 # --- Tunables (one place to adjust) ---
 @export var rain_hunger_decay_multiplier: float = 1.5      # Rain increases hunger decay (creatures get hungrier)
 @export var rain_happiness_decay_multiplier: float = 1.2    # Rain slightly increases happiness decay
