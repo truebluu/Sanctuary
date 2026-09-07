@@ -49,11 +49,15 @@ var _effect_timer: float = 0.0
 signal day_night_state_changed(is_night: bool)
 
 func _ready() -> void:
-	# If no DayNightCycle assigned, try to find one in the scene tree.
+	# If no DayNightCycle assigned, try to find it via its autoload node-path
+	# (/root/DayNightCycle). A sibling-relative "../DayNightCycle" or a child
+	# search (_find_day_night_cycle) can never reach an autoload, so use the
+	# absolute autoload path directly — matches the contract in
+	# day_night_cycle.gd (get_node_or_null("/root/DayNightCycle")).
 	if day_night_cycle == null:
-		day_night_cycle = get_node_or_null("../DayNightCycle")
+		day_night_cycle = get_node_or_null("/root/DayNightCycle")
 	if day_night_cycle == null:
-		# Fallback: search the entire scene tree (expensive, but safe)
+		# Fallback: search the scene tree (only useful if not an autoload)
 		day_night_cycle = _find_day_night_cycle(self)
 	if day_night_cycle == null:
 		push_warning("SanctuaryDayNightCycle: No DayNightCycle node found. Disabling.")
@@ -69,8 +73,10 @@ func _ready() -> void:
 		set_process(false)
 		return
 
-	# Initialize state based on current time.
-	var current_time: float = day_night_cycle.get("time_of_day") if day_night_cycle.get("time_of_day") != null else 0.0
+	# Initialize state based on current time. The autoload exposes a method
+	# get_time_of_day(), not a time_of_day property, so call it via has_method
+	# (node.get("time_of_day") would spuriously null + push an error).
+	var current_time: float = day_night_cycle.get_time_of_day() if day_night_cycle.has_method("get_time_of_day") else 0.0
 	_update_night_state(current_time)
 
 func _process(delta: float) -> void:
