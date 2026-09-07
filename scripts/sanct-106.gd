@@ -19,6 +19,7 @@ signal heal_pulse(creature: Node)
 
 var _active_targets: Array[Node] = []
 var _accum: float = 0.0
+var _active: bool = false
 var _shape: CircleShape2D
 
 func _ready() -> void:
@@ -44,13 +45,16 @@ func _ready() -> void:
     _area.body_entered.connect(_on_body_entered)
     _area.body_exited.connect(_on_body_exited)
     _area.monitorable = true
-    _area.monitoring = true
+    _area.monitoring = false  # off until a sanctuary healer activates it
     visible = false  # hidden by default; enable when a sanctuary healer is active
 
 func _process(delta: float) -> void:
-    if _active_targets.is_empty():
+    if not _active or _active_targets.is_empty():
         return
-    _accum += delta * heal_per_second
+    # Accumulate 1 unit per second; each burst heals heal_per_second HP.
+    # (NOT delta * heal_per_second, which would make the rate quadratic:
+    #  heal_per_second bursts/sec x heal_per_second HP/burst = rate^2.)
+    _accum += delta
     while _accum >= 1.0:
         _accum -= 1.0
         _apply_heal_burst()
@@ -92,8 +96,15 @@ func _is_healable(body: Node) -> bool:
     return true
 
 func set_active(active: bool) -> void:
+    _active = active
     visible = active
     _area.monitoring = active
+    if not active:
+        # Stop healing already-tracked targets immediately; otherwise they
+        # keep getting healed while the zone is "off" (no exit events fire
+        # while monitoring is disabled).
+        _active_targets.clear()
+        _accum = 0.0
 
 func get_active_count() -> int:
     return _active_targets.size()
