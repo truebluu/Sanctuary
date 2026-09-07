@@ -99,6 +99,10 @@ func set_weather(new_weather: String) -> bool:
 	if new_weather == _current_weather:
 		return false
 	_current_weather = new_weather
+	# Reset the ambient-cycle timer so a scripted/forced weather (e.g. a creature
+	# casting storm) holds for a full cycle instead of being overridden by the
+	# next auto-roll within seconds. Without this the cast mechanic is gutted.
+	_timer = cycle_duration
 	weather_changed.emit(new_weather)
 	return true
 

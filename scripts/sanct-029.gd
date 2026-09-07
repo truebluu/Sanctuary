@@ -7,8 +7,8 @@ extends Node
 # --- Tunables (one place to adjust) ---
 @export var rain_hunger_decay_multiplier: float = 1.5      # Rain increases hunger decay (creatures get hungrier)
 @export var rain_happiness_decay_multiplier: float = 1.2    # Rain slightly increases happiness decay
-@export var sun_happiness_gain: float = 5.0                 # Sun gives a flat happiness bonus per minute
-@export var sun_energy_gain: float = 2.0                    # Sun gives a flat energy bonus per minute (if creature has energy)
+@export var sun_happiness_gain: float = 5.0                 # Sun flat happiness bonus, applied per second (weather_check_interval=1.0s)
+@export var sun_energy_gain: float = 2.0                    # Sun flat energy bonus, applied per second (if creature has energy)
 @export var rain_energy_decay_multiplier: float = 1.1       # Rain slightly increases energy decay
 @export var weather_check_interval: float = 1.0             # How often to apply continuous effects (seconds)
 
