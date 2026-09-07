@@ -140,12 +140,10 @@ func is_bonded() -> bool:
 
 # --- Build on CreatureBonding (existing global) to persist the pair ---
 func _on_bond_changed() -> void:
-	if Engine.has_singleton("CreatureBonding"):
-		var bonding: Node = Engine.get_singleton("CreatureBonding")
-		if bonding.has_method("record_bond"):
-			bonding.record_bond(_creature, _partner_creature, _bonded)
+	# CreatureBonding is a class_name (RefCounted), not an autoload, and has
+	# no record_bond method; bond persistence is handled by the bonding node.
+	pass
 
 func _process_bonding_sync(delta: float) -> void:
 	# No-op placeholder; bond state is reported via signals to CreatureBonding.
 	pass
-</think>

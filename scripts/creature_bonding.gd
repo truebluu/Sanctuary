@@ -67,7 +67,7 @@ func setup_with_pet_path(path: NodePath) -> void:
 func _ensure_pet_resolved() -> void:
 	if _pet:
 		return
-	if _pet_path and get_tree() and get_tree().get_root().has_node(_pet_path):
+	if _pet_path and get_tree() and get_tree().root.has_node(_pet_path):
 		var node = get_node(_pet_path)
 		if node is Pet:
 			_pet = node

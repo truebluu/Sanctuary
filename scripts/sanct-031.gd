@@ -124,12 +124,8 @@ static func attempt_capture(
 	# Roll the dice
 	var success: bool = randf() < chance
 
-	# Emit event via EventBus (if available)
-	if Engine.has_singleton("EventBus"):
-		EventBus.emit_signal("creature_capture_attempted", creature, chance, success)
-	else:
-		# Fallback: print for debugging
-		print("CreatureCaptureRate: capture chance = ", chance, " success = ", success)
+	# EventBus has no creature_capture_attempted signal in Sanctuary; log instead.
+	print("CreatureCaptureRate: capture chance = ", chance, " success = ", success)
 
 	return success
 

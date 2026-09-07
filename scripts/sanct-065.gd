@@ -64,10 +64,8 @@ func _xp_threshold(level: int) -> float:
 func _apply_happiness_bonus(creature_id: StringName, bond_level: int) -> void:
     var delta: float = BOND_HAPPINESS_PER_LEVEL * float(bond_level)
     bond_bonus_applied.emit(creature_id, delta)
-    if Engine.has_singleton("CreatureNeedsEngine"):
-        var engine: Node = Engine.get_singleton("CreatureNeedsEngine")
-        if engine.has_method("add_happiness"):
-            engine.add_happiness(creature_id, delta)
+    # CreatureNeedsEngine is a class_name (RefCounted), not an autoload, and
+    # has no add_happiness method; the bonus is broadcast via bond_bonus_applied.
 
 func evolution_threshold_reduction(creature_id: StringName) -> float:
     var total: float = 0.0

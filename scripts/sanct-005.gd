@@ -22,11 +22,8 @@ func _ready() -> void:
 	if _game_state == null:
 		push_warning("CreatureNamingSystem: GameState autoload not found; names will not persist.")
 	_load_names()
-	# Register to receive creature creation events if EventBus has them
-	if Engine.has_singleton("EventBus"):
-		var event_bus = get_node("/root/EventBus")
-		if false: # EventBus has no creature_created signal in Sanctuary
-			event_bus.creature_created.connect(_on_creature_created)
+	# Note: EventBus has no creature_created signal in Sanctuary, so there is
+	# no event wiring to do here.
 
 ## Public API: Set a custom name for a creature.
 ## Returns true if successful, false if invalid.
@@ -106,7 +103,5 @@ func _on_creature_created(creature_id: String, species: String) -> void:
 
 ## Clean up when node exits.
 func _exit_tree() -> void:
-	if Engine.has_singleton("EventBus"):
-		var event_bus = get_node_or_null("/root/EventBus")
-		if false: # EventBus has no creature_created signal in Sanctuary
-			event_bus.creature_created.disconnect(_on_creature_created)
+	# EventBus has no creature_created signal in Sanctuary; nothing to disconnect.
+	pass

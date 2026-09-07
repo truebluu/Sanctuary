@@ -7,10 +7,30 @@ const IDLE_MIN_SECONDS: float = 1.0             # Minimum idle timeout duration
 const IDLE_MAX_SECONDS: float = 5.0             # Maximum idle timeout duration
 
 # Exported tunables – all difficulty‑relevant values are exposed here for one‑place editing
-@export var bob_amplitude: float = 5.0 setget _clamp_bob_amplitude   # Vertical bob amplitude (px)
-@export var bob_frequency: float = 1.5 setget _clamp_bob_frequency   # Bob oscillation frequency (Hz)
-@export var idle_timeout_min: float = IDLE_MIN_SECONDS setget _clamp_idle_min
-@export var idle_timeout_max: float = IDLE_MAX_SECONDS setget _clamp_idle_max
+var _bob_amplitude: float = 5.0
+@export var bob_amplitude: float:
+    get:
+        return _bob_amplitude
+    set(value):
+        _bob_amplitude = clamp(value, 0.0, MAX_BOB_AMPLITUDE_PX)
+var _bob_frequency: float = 1.5
+@export var bob_frequency: float:
+    get:
+        return _bob_frequency
+    set(value):
+        _bob_frequency = clamp(value, BOB_BASE_FREQUENCY * 0.5, BOB_BASE_FREQUENCY * 2.0)
+var _idle_timeout_min: float = IDLE_MIN_SECONDS
+@export var idle_timeout_min: float:
+    get:
+        return _idle_timeout_min
+    set(value):
+        _idle_timeout_min = max(value, IDLE_MIN_SECONDS)
+var _idle_timeout_max: float = IDLE_MAX_SECONDS
+@export var idle_timeout_max: float:
+    get:
+        return _idle_timeout_max
+    set(value):
+        _idle_timeout_max = max(value, IDLE_MAX_SECONDS)
 
 # Node references (auto‑loaded by scene hierarchy)
 @onready var sprite: Sprite2D = $Sprite2D
@@ -45,20 +65,6 @@ func _ready() -> void:
 
     # Emit signal for design‑tool awareness
     emit_signal("idle_started")
-
-# -------------------------------------------------------------------------
-# Exported variable clamping – guarantees tunable values stay within safe bounds
-func _clamp_bob_amplitude(value: float) -> float:
-    return clamp(value, 0.0, MAX_BOB_AMPLITUDE_PX)
-
-func _clamp_bob_frequency(value: float) -> float:
-    return clamp(value, BOB_BASE_FREQUENCY * 0.5, BOB_BASE_FREQUENCY * 2.0)
-
-func _clamp_idle_min(value: float) -> float:
-    return max(value, IDLE_MIN_SECONDS)
-
-func _clamp_idle_max(value: float) -> float:
-    return clamp(value, idle_timeout_min, idle_timeout_max)
 
 # -------------------------------------------------------------------------
 # Bobbing logic – runs every frame while idle timer is active

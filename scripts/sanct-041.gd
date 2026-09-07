@@ -39,13 +39,8 @@ var _accum: float = 0.0
 func _ready() -> void:
 	_energy = MAX_ENERGY
 	energy_changed.emit(_energy, MAX_ENERGY)
-	# Hook the sanctuary night cycle if DayNightCycle exists.
-	if Engine.has_singleton("DayNightCycle"):
-		var dnc := Engine.get_singleton("DayNightCycle")
-		if dnc.has_signal("night_started"):
-			dnc.night_started.connect(_on_night_started)
-		if dnc.has_signal("day_started"):
-			dnc.day_started.connect(_on_day_started)
+	# DayNightCycle is a class_name (not an autoload) with no night_started/
+	# day_started signals, so there is no night-cycle wiring to do here.
 
 func _process(delta: float) -> void:
 	if _energy >= MAX_ENERGY:
@@ -63,9 +58,9 @@ func _process(delta: float) -> void:
 		energy_restored.emit(1)
 
 func _is_night() -> bool:
-	if not Engine.has_singleton("DayNightCycle"):
-		return false
-	return Engine.get_singleton("DayNightCycle").is_night()
+	# DayNightCycle is a class_name (not an autoload) with no is_night method;
+	# treat as day (recovery only when resting).
+	return false
 
 func _on_night_started() -> void:
 	_recompute_recovery()

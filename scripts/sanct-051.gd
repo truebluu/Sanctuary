@@ -13,8 +13,13 @@ extends Node
 const HUNGER_DECAY_PER_SECOND: float = 5.0
 @export var hunger_max: int = 100
 
-# Current hunger value; uses set/get to clamp and emit a signal.
-var hunger: int = hunger_max setget _set_hunger, _get_hunger
+# Current hunger value; clamped via a property setter.
+var _hunger: int = hunger_max
+var hunger: int:
+    get:
+        return _hunger
+    set(value):
+        _hunger = clamp(value, 0, hunger_max)
 
 # Emitted whenever the hunger value changes.
 signal hunger_changed(new_value)
@@ -34,9 +39,3 @@ func feed(amount: int) -> void:
     # Restores hunger up to the maximum; used by power‑ups or interactions.
     hunger = min(hunger + amount, hunger_max)
     emit_signal("hunger_changed", hunger)
-
-func _set_hunger(value: int) -> void:
-    hunger = clamp(value, 0, hunger_max)
-
-func _get_hunger() -> int:
-    return hunger

@@ -70,7 +70,7 @@ const TYPE_CHART: Dictionary = {
         "fighting": 2.0, "dragon": 2.0, "dark": 2.0, "steel": 0.5,
         "poison": 0.5,
     },
-}.export var type_chart: Dictionary = TYPE_CHART
+@export var type_chart: Dictionary = TYPE_CHART
 
 # PUBLIC METHODS ---------------------------------------------------------
 

@@ -58,7 +58,7 @@ class FeedingUI extends Control:
             return
         if not cooldown_timer.is_stopped():
             return
-        var now = OS.get_ticks_msec() / 1000.0
+        var now = Time.get_ticks_msec() / 1000.0
         if now - _last_feed_time < cooldown:
             return
         _last_feed_time = now

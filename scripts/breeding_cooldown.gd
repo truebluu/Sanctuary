@@ -1,6 +1,6 @@
 # BreedingCooldown — Taming (The Sanctuary)
 # SANCT-878: Per-creature breeding cooldown + egg incubation timer.
-class_name BreedingCooldown
+class_name BreedingCooldownTracker
 extends RefCounted
 
 signal egg_hatched(creature_id: String)
