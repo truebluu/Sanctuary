@@ -35,8 +35,8 @@ var _creatures: Array[Node] = []
 func _ready() -> void:
 	_time_seconds = day_start_hour * SECONDS_PER_HOUR
 	_was_day = _is_day(_time_seconds)
-	# Collect creatures in the "creature" group so we can notify them on change.
-	_creatures = get_tree().get_nodes_in_group("creature")
+	# Collect creatures in the "creatures" group so we can notify them on change.
+	_creatures = get_tree().get_nodes_in_group("creatures")
 
 func _process(delta: float) -> void:
 	var prev_time: float = _time_seconds
