@@ -8,7 +8,7 @@ class_name CreatureFriendship
 
 ## Tunables (one-place changes)
 const DEFAULT_MAX_FRIENDSHIP := 100
-const DEFAULT_TIER_THRESHOLDS := [0, 20, 50, 80, 100]  # Tier 0 at 0, Tier 1 at 20, etc.
+const DEFAULT_TIER_THRESHOLDS: Array[int] = [0, 20, 50, 80, 100]  # Tier 0 at 0, Tier 1 at 20, etc.
 const DEFAULT_GAIN_FEED := 5
 const DEFAULT_GAIN_PLAY := 3
 const DEFAULT_GAIN_PET := 2
@@ -47,9 +47,12 @@ signal ability_unlocked(ability_id: String)
 signal evolution_path_unlocked(path_id: String)
 
 func _ready() -> void:
-	# Validate tier thresholds
+	# Validate tier thresholds. Duplicate the const array first — assigning a
+	# const array to a var shares the reference, so mutating it (sort/insert)
+	# would hit the read-only const.
+	tier_thresholds = tier_thresholds.duplicate()
 	if tier_thresholds.is_empty():
-		tier_thresholds = DEFAULT_TIER_THRESHOLDS
+		tier_thresholds = DEFAULT_TIER_THRESHOLDS.duplicate()
 	# Ensure thresholds are sorted and start at 0
 	tier_thresholds.sort()
 	if tier_thresholds[0] != 0:

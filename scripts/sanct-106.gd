@@ -14,18 +14,37 @@ signal heal_pulse(creature: Node)
 @export var require_contact: bool = true           # true = must be touching, false = aura
 @export var heal_visual_strength: float = 0.6      # glow intensity of the heal pulse
 
-@onready var _area: Area2D = $HealArea
-@onready var _shape: CircleShape2D = $HealArea/CollisionShape2D.shape as CircleShape2D
+@onready var _area: Area2D = get_node_or_null("HealArea")
+@onready var _shape_node: CollisionShape2D = get_node_or_null("HealArea/CollisionShape2D")
 
 var _active_targets: Array[Node] = []
 var _accum: float = 0.0
+var _shape: CircleShape2D
 
 func _ready() -> void:
+    # Defensive: if the scene didn't provide a HealArea child (e.g. this node
+    # was added via code with no children), build one so the system still works.
+    if _area == null:
+        _area = Area2D.new()
+        _area.name = "HealArea"
+        var col := CollisionShape2D.new()
+        col.name = "CollisionShape2D"
+        var shape := CircleShape2D.new()
+        shape.radius = heal_radius
+        col.shape = shape
+        _area.add_child(col)
+        add_child(_area)
+        _shape_node = col
+    if _shape_node != null and _shape_node.shape is CircleShape2D:
+        _shape = _shape_node.shape as CircleShape2D
+    if _shape == null:
+        _shape = CircleShape2D.new()
+        _shape.radius = heal_radius
     _shape.radius = heal_radius
     _area.body_entered.connect(_on_body_entered)
     _area.body_exited.connect(_on_body_exited)
     _area.monitorable = true
-    _area.monitor = true
+    _area.monitoring = true
     visible = false  # hidden by default; enable when a sanctuary healer is active
 
 func _process(delta: float) -> void:
@@ -74,7 +93,7 @@ func _is_healable(body: Node) -> bool:
 
 func set_active(active: bool) -> void:
     visible = active
-    _area.monitor = active
+    _area.monitoring = active
 
 func get_active_count() -> int:
     return _active_targets.size()

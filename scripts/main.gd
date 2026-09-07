@@ -165,6 +165,7 @@ func _ready() -> void:
 	add_child(weather_button)
 	var breeding_cooldown_node := BreedingCooldown.new()
 	breeding_cooldown = breeding_cooldown_node
+	add_child(breeding_cooldown_node)  # MUST be in the tree so _process ticks cooldowns down
 	breeding_cooldown_node.cooldown_started.connect(func(creature_id: StringName, duration: float) -> void:
 		stats_label.text = "Cooldown started for %s (%.1fs)" % [creature_id, duration]
 	)
@@ -335,7 +336,7 @@ func _on_breed() -> void:
 		return
 	breeding_cooldown.start_cooldown("parent_a")
 	breeding_cooldown.start_cooldown("parent_b")
-	_on_offspring_bred(child)
+	# GameState.breed() already emits offspring_bred -> _on_offspring_bred (line 43)
 
 func _on_offspring_bred(child: CreatureGenome) -> void:
 	offspring_label.text = "Offspring (gen %d)\n%s" % [child.generation, child.describe(GameState.rng)]
@@ -402,7 +403,7 @@ func _on_trait_inherit_pressed() -> void:
 		return
 	GameState.offspring = child
 	GameState.offspring_bred.emit(child)
-	_on_offspring_bred(child)
+	# emit already triggers _on_offspring_bred via the line-43 connection
 
 func _on_mood_changed(new_mood: int) -> void:
 	var mood_name: String

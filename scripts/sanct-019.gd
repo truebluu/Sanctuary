@@ -26,8 +26,8 @@ enum Mood { HAPPY, SAD, ANGRY }
 var _creature: Node
 var _current_mood: Mood = Mood.HAPPY
 
-@onready var _icon: Sprite2D = $Icon
-@onready var _color_rect: ColorRect = $ColorRect  # fallback if no texture
+@onready var _icon: Sprite2D = get_node_or_null("Icon")
+@onready var _color_rect: ColorRect = get_node_or_null("ColorRect")  # fallback if no texture
 
 
 func _ready() -> void:

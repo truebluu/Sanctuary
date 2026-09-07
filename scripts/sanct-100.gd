@@ -17,7 +17,16 @@ var _cooldown_timer: float = 0.0
 
 func _ready() -> void:
     var sprite: Sprite2D = Sprite2D.new()
-    sprite.texture = load(sprite_path)
+    # Defensive: the sprite may not exist (this was a Galage ship asset). If
+    # missing, fall back to a colored placeholder so the gallery still works.
+    if ResourceLoader.exists(sprite_path):
+        sprite.texture = load(sprite_path)
+    else:
+        var rect := ColorRect.new()
+        rect.size = Vector2(48, 48)
+        rect.color = Color(0.3, 0.6, 1.0)
+        rect.position = Vector2(216, 156)
+        add_child(rect)
     sprite.position = Vector2(240, 180)
     add_child(sprite)
 
