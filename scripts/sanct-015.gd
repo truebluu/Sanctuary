@@ -1,75 +1,96 @@
-class_name CreatureEvolution
 extends Node
-## Creature evolution trigger.
-## Listens to a creature's level and happiness changes and evolves it when
-## both thresholds are met. Builds on the existing Creature, CreatureNeeds,
-## and EvolutionController systems. Adds a clear progression milestone for
-## sanctuary creatures, rewarding the player for raising both stats.
+class_name CreatureEvolutionTrigger
 
-## --- Tunables (one-place design) ---
-@export var level_threshold: int = 5
-@export var happiness_threshold: float = 0.8
-@export var evolution_stage_name: String = "next_stage"  # fallback if not set
+## Monitors a creature's level and happiness, fires evolution when both thresholds are met.
+## Builds on CreatureNeeds (happiness) and the existing CreatureEvolution pipeline.
 
-## --- Internal state ---
+signal evolution_triggered(creature: Node, next_stage: StringName)
+signal evolution_blocked(reason: String)
+
+# Thresholds — one place to tune evolution gating.
+@export var required_level: int = 5
+@export var required_happiness: float = 0.85
+@export var cooldown_seconds: float = 12.0
+
 var _creature: Node = null
-var _evolved: bool = false
+var _on_cooldown: bool = false
+var _cooldown_timer: SceneTreeTimer = null
 
-## --- Signals ---
-signal evolution_triggered(creature: Node, stage_name: String)
-signal evolution_failed(creature: Node, reason: String)
-
-func _ready() -> void:
-	# If not explicitly assigned, try to get the parent as the creature.
+func setup(target: Node) -> void:
+	_creature = target
 	if _creature == null:
-		_creature = get_parent()
+		push_error("CreatureEvolutionTrigger: no creature target set")
+
+func set_thresholds(level: int, happiness: float) -> void:
+	required_level = level
+	required_happiness = happiness
+
+func _read_level() -> int:
+	if _creature != null and _creature.has("level"):
+		return int(_creature.get("level"))
+	return 0
+
+func _read_happiness() -> float:
+	if _creature != null and _creature.has("happiness"):
+		return float(_creature.get("happiness"))
+	return 0.0
+
+func _process(_delta: float) -> void:
+	if _creature == null or _on_cooldown:
+		return
+	var level: int = _read_level()
+	var happiness: float = _read_happiness()
+	if level >= required_level and happiness >= required_happiness:
+		_attempt_evolve()
+
+func _attempt_evolve() -> void:
+	var stage: StringName = _creature.get("evolution_stage") if _creature.has("evolution_stage") else &"base"
+	if stage == &"final":
+		evolution_blocked.emit("Creature is already at final evolution stage")
+		return
+	var next: StringName = _resolve_next_stage(stage)
+	if next == &"":
+		evolution_blocked.emit("No further evolution path defined")
+		return
+	_start_cooldown()
+	evolution_triggered.emit(_creature, next)
+	EventBus.emit("creature_evolution_triggered", _creature, next)
+
+func _resolve_next_stage(current: StringName) -> StringName:
+	var stages: Array = _creature.get("evolution_stages") if _creature.has("evolution_stages") else []
+	if stages is Array and not stages.is_empty():
+		var idx: int = stages.find(current)
+		if idx >= 0 and idx + 1 < stages.size():
+			return StringName(stages[idx + 1])
+	return &""
+
+func _start_cooldown() -> void:
+	_on_cooldown = true
+	_cooldown_timer = get_tree().create_timer(cooldown_seconds)
+	_cooldown_timer.timeout.connect(_on_cooldown_end)
+
+func _on_cooldown_end() -> void:
+	_on_cooldown = false
+	_cooldown_timer = null
+
+func is_ready() -> bool:
+	if _creature == null or _on_cooldown:
+		return false
+	var level: int = _read_level()
+	var happiness: float = _read_happiness()
+	return level >= required_level and happiness >= required_happiness
+
+func get_block_reason() -> String:
 	if _creature == null:
-		push_error("CreatureEvolution: No creature assigned.")
-		return
-	_connect_signals()
-
-func _connect_signals() -> void:
-	if _creature.has_signal("level_changed"):
-		_creature.level_changed.connect(_on_level_changed)
-	if _creature.has_signal("happiness_changed"):
-		_creature.happiness_changed.connect(_on_happiness_changed)
-	# Also check on ready in case thresholds are already met.
-	_check_evolution()
-
-func _on_level_changed(_new_level: int) -> void:
-	_check_evolution()
-
-func _on_happiness_changed(_new_happiness: float) -> void:
-	_check_evolution()
-
-func _check_evolution() -> void:
-	if _evolved:
-		return
-	if _creature == null:
-		return
-	var level: int = _creature.get("level") if _creature.get("level") != null else 0
-	var happiness: float = _creature.get("happiness") if _creature.get("happiness") != null else 0.0
-	if level >= level_threshold and happiness >= happiness_threshold:
-		_trigger_evolution()
-
-func _trigger_evolution() -> void:
-	_evolved = true
-	# Use the EvolutionController if available, else fallback to a direct call.
-	var evolution_controller = get_node_or_null("/root/EvolutionController")
-	if evolution_controller and evolution_controller.has_method("evolve_creature"):
-		var result = evolution_controller.evolve_creature(_creature, evolution_stage_name)
-		if result is bool and result:
-			evolution_triggered.emit(_creature, evolution_stage_name)
-			EventBus.emit_signal("creature_evolved", _creature, evolution_stage_name)
-		else:
-			_evolved = false  # allow retry if evolution failed
-			evolution_failed.emit(_creature, "evolution_controller_rejected")
-	else:
-		# Fallback: directly call a method on the creature if it exists.
-		if _creature.has_method("evolve"):
-			_creature.evolve(evolution_stage_name)
-			evolution_triggered.emit(_creature, evolution_stage_name)
-			EventBus.emit_signal("creature_evolved", _creature, evolution_stage_name)
-		else:
-			_evolved = false
-			evolution_failed.emit(_creature, "no_evolution_method")
+		return "No creature target"
+	if _on_cooldown:
+		return "Evolution cooldown active"
+	var level: int = _read_level()
+	var happiness: float = _read_happiness()
+	if level < required_level:
+		return "Level %d/%d" % [level, required_level]
+	if happiness < required_happiness:
+		return "Happiness %.0f%%/%.0f%%" % [happiness * 100.0, required_happiness * 100.0]
+	return ""
+# Feel: evolution is gated on BOTH level and happiness, so players must care for the creature, not just grind. Builds on CreatureNeeds for the happiness signal and CreatureEvolution for the stage pipeline.
+# Fix: replaced creature.get("key", default) (2-arg, invalid in GD4) with has()/get() guards via _read_level/_read_happiness; aligned signal emit names (evolution_triggered/evolution_blocked) to their declarations.

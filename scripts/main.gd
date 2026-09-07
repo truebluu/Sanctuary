@@ -165,7 +165,6 @@ func _ready() -> void:
 	add_child(weather_button)
 	var breeding_cooldown_node := BreedingCooldown.new()
 	breeding_cooldown = breeding_cooldown_node
-	add_child(breeding_cooldown_node)
 	breeding_cooldown_node.cooldown_started.connect(func(creature_id: StringName, duration: float) -> void:
 		stats_label.text = "Cooldown started for %s (%.1fs)" % [creature_id, duration]
 	)
