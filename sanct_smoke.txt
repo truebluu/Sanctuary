@@ -1,0 +1,13 @@
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+
+SANCTUARY DEMO TEST: Starting...
+  PASS: parent A created
+  PASS: parent B created
+  PASS: offspring created
+  PASS: offspring generation == 1 (got 1)
+  PASS: phenotype has all traits
+  PASS: phenotype element has name
+  PASS: stat power computed
+  PASS: hp > 0 (got 88)
+  PASS: describe returns non-empty
+SANCTUARY DEMO TEST: ALL PASSED
