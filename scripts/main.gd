@@ -27,12 +27,44 @@ class SimpleCreature extends Node2D:
 	signal happiness_changed(value: float)
 	signal hunger_changed(value: float)
 	signal sickness_changed(value: float)
+	signal weather_cast(weather: String)
 	var happiness: float = 50.0
+	var hunger: float = 100.0
+	var energy: float = 100.0
+	const MAX_HAPPINESS := 100.0
+	const MAX_HUNGER := 100.0
+	const MAX_ENERGY := 100.0
+	func _ready() -> void:
+		# Join the creatures group so SanctWeatherEffects (sanct-029) and any
+		# other ambient system can apply NEEDS through modify_*. This is the
+		# contract: get_nodes_in_group("creatures") + modify_happiness/modify_hunger.
+		add_to_group("creatures")
 	func get_happiness() -> float:
 		return happiness
 	func set_happiness(value: float) -> void:
-		happiness = value
-		happiness_changed.emit(value)
+		happiness = clampf(value, 0.0, MAX_HAPPINESS)
+		happiness_changed.emit(happiness)
+	func get_hunger() -> float:
+		return hunger
+	func get_energy() -> float:
+		return energy
+	## Weather/needs effect interface (called by sanct-029 and by casts).
+	func modify_happiness(delta: float) -> void:
+		set_happiness(happiness + delta)
+	func modify_hunger(delta: float) -> void:
+		hunger = clampf(hunger + delta, 0.0, MAX_HUNGER)
+		hunger_changed.emit(hunger)
+	func modify_energy(delta: float) -> void:
+		energy = clampf(energy + delta, 0.0, MAX_ENERGY)
+	## Creature-affects-weather casting: a bonded creature nudges the ambient
+	## WeatherSystem toward a target state. Returns the weather actually set.
+	func cast_weather(target: String) -> String:
+		var ws = get_node_or_null("/root/WeatherSystem")
+		if ws == null or not ws.has_method("set_weather"):
+			return ""
+		if ws.set_weather(target):
+			weather_cast.emit(target)
+		return str(ws.get_current_weather())
 
 func _ready() -> void:
 	breed_button.pressed.connect(_on_breed)
@@ -155,12 +187,29 @@ func _ready() -> void:
 	weather_button.text = "Toggle Rain/Sun"
 	weather_button.position = Vector2(10, 640)
 	weather_button.pressed.connect(func() -> void:
-		if weather_effects._current_weather == "rain":
-			weather_effects._on_weather_changed("sun")
+		# Single source of truth: go through /root/WeatherSystem, NOT directly at
+		# weather_effects. sanct-029 connects to weather_changed and syncs itself,
+		# so setting the autoload drives real creature effects via the group.
+		var ws := get_node_or_null("/root/WeatherSystem")
+		var current: String = str(ws.get_current_weather()) if ws else "clear"
+		var target: String = "rain" if current != "rain" else "sun"
+		if ws and ws.has_method("set_weather"):
+			ws.set_weather(target)
 		else:
-			weather_effects._on_weather_changed("rain")
+			# Fallback (no autoload): still drive the local effects node so the
+			# demo is never left silent, but log it — a real run should have it.
+			weather_effects._on_weather_changed(target)
 	)
 	add_child(weather_button)
+	var cast_button := Button.new()
+	cast_button.text = "Creature casts Storm"
+	cast_button.position = Vector2(10, 680)
+	cast_button.pressed.connect(func() -> void:
+		if mood_creature.has_method("cast_weather"):
+			var got: String = mood_creature.cast_weather("storm")
+			stats_label.text = "Creature weather-cast -> %s" % got
+	)
+	add_child(cast_button)
 	var breeding_cooldown_node := BreedingCooldown.new()
 	breeding_cooldown = breeding_cooldown_node
 	add_child(breeding_cooldown_node)  # MUST be in the tree so _process ticks cooldowns down

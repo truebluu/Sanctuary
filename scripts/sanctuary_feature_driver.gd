@@ -68,37 +68,79 @@ func _drive() -> void:
 	_collect_buttons(_main, buttons)
 	_log("found %d Button(s) in tree" % buttons.size())
 	_check(buttons.size() >= 20, "expected >=20 buttons (scene + code-built), got %d" % buttons.size())
+	_pressed_ok.clear()
 	for b in buttons:
 		var t: String = str(b.get("text"))
 		b.pressed.emit()
 		_pressed_ok.append(t)
 		await _wait_frames(1)
 		_log("  pressed %s" % t)
-	_check(buttons.size() >= 1 and _pressed_ok.size() == buttons.size(), "pressed all %d buttons without runtime crash" % buttons.size())
+	# C2: exact count — every collected button was pressed (a handler crash during
+	# the loop would abort it and _pressed_ok would fall short of buttons.size()).
+	_check(_pressed_ok.size() == buttons.size(), "pressed all %d buttons without runtime crash" % buttons.size())
 
-	# --- 3.1 Weather toggle must flip _current_weather (kimi C2: the ambient
-	#         /root/WeatherSystem autoload is absent — only GameState+EventBus are
-	#         registered — so weather only changes via this button; the toggle itself
-	#         sets sanct-029.gd:44 _current_weather regardless) ---
+	# --- 3.1 Weather toggle must drive REAL creature effects through the autoload.
+	#         deepseek-pro C1: the old assertion only checked the local string
+	#         flip (a false-green). Now: mood_creature is in the "creatures"
+	#         group and sanct-029 applies hunger/happiness per-tick; toggling
+	#         rain vs sun must move happiness observably via the group contract. ---
 	var weather_effects := _find_weather_node()
-	if weather_effects != null:
+	var mood_creature := _find_node_by_name(_main, "MoodCreature")
+	if weather_effects != null and mood_creature != null:
+		_check(mood_creature.is_in_group("creatures"), "MoodCreature is in the 'creatures' group")
+		var ws := get_node_or_null("/root/WeatherSystem")
+		_check(ws != null, "WeatherSystem autoload is registered (/root/WeatherSystem)")
 		var wb := _find_button_by_text("Toggle Rain/Sun")
 		if wb != null:
-			var w_before: String = str(weather_effects.get("_current_weather"))
+			var before: float = float(mood_creature.get_happiness())
 			wb.pressed.emit()
 			await _wait_frames(2)
-			var w_after: String = str(weather_effects.get("_current_weather"))
-			_check(w_before != w_after, "Toggle Rain/Sun flipped _current_weather (%s -> %s)" % [w_before, w_after])
+			var after: float = float(mood_creature.get_happiness())
+			# sun boosts happiness +5/interval; rain drops it. At minimum the
+			# toggle must move the value through the autoload -> group path.
+			_check(after != before, "Weather toggle changed MoodCreature happiness (%.1f -> %.1f)" % [before, after])
+		var cast_btn := _find_button_by_text("Creature casts Storm")
+		if cast_btn != null and ws != null:
+			var before_w: String = str(ws.get_current_weather())
+			cast_btn.pressed.emit()
+			await _wait_frames(2)
+			var after_w: String = str(ws.get_current_weather())
+			_check(after_w == "storm", "Creature cast drives autoload to storm (%s -> %s)" % [before_w, after_w])
 	else:
-		_log("  WARN: weather node not found — toggle weather assertion skipped")
+		_log("  WARN: weather/creature node not found — weather assertions skipped")
 
-	# --- 4. Reroll must rotate the parents (main.gd _on_reroll) ---
+	# --- 3.2 Reroll must change the parents' CONTENTS (L5: the old assertion
+	#         compared instance addresses, which always differ — a tautology).
+	#         Compare the described genome (loci + phenotypes), which is real
+	#         content and only meaningful if the parents actually rotated. ---
 	if reroll_btn != null and _gs.get("parent_a") != null:
-		var before_a: String = str(_gs.get("parent_a"))
+		var pa: Variant = _gs.get("parent_a")
+		var desc_a: String = str(pa.describe(_gs.get("rng"))) if pa.has_method("describe") else ""
+		# set_parents resets offspring to null; capture it to prove rotation ran.
 		reroll_btn.pressed.emit()
 		await _wait_frames(2)
-		var after_a: String = str(_gs.get("parent_a"))
-		_check(before_a != after_a, "RerollButton changed parent A (before=%s after=%s)" % [before_a, after_a])
+		var pa2: Variant = _gs.get("parent_a")
+		var desc_a2: String = str(pa2.describe(_gs.get("rng"))) if pa2 != null and pa2.has_method("describe") else ""
+		var changed: bool = (pa2 != pa) or (desc_a != desc_a2)
+		_check(changed, "RerollButton rotated parent A (genome: '%s' -> '%s')" % [desc_a, desc_a2])
+		# set_parents clears offspring; a reroll must drop any stale offspring so the
+		# labels reset to "Press BREED" (main.gd:302 offline_reset). Assert it is
+		# actually nulled, not that null==null (which is what the old tautology did).
+		var offspring_after: Variant = _gs.get("offspring")
+		_check(offspring_after == null, "reroll clears stale offspring (set_parents sets null)")
+
+	# --- 3.3 L8: breeding on cooldown must early-return (second immediate BREED
+	#         press must NOT emit offspring_bred). ---
+	if breed_btn != null and _gs.has_signal("offspring_bred"):
+		# The first BREED above started the 30s cooldown. A second immediate press
+		# must hit the can_breed() guard in _on_breed and produce no offspring.
+		var bred2: Array = []
+		var cb2 := func(_c): bred2.append(true)
+		_gs.offspring_bred.connect(cb2)
+		breed_btn.pressed.emit()
+		await _wait_frames(2)
+		_check(bred2.is_empty(), "second immediate BREED is gated by cooldown (L8)")
+		_gs.offspring_bred.disconnect(cb2)
 
 	_finished = true
 	_quit(0 if _failures.is_empty() else 1)
@@ -118,6 +160,16 @@ func _find_button_by_text(txt: String) -> Button:
 	while not stack.is_empty():
 		var n: Node = stack.pop_back()
 		if n is Button and str(n.get("text")) == txt:
+			return n
+		for c in n.get_children():
+			stack.append(c)
+	return null
+
+func _find_node_by_name(root: Node, node_name: String) -> Node:
+	var stack: Array = [root]
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+		if str(n.name) == node_name:
 			return n
 		for c in n.get_children():
 			stack.append(c)

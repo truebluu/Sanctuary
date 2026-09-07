@@ -1,5 +1,11 @@
 extends Node
-class_name DayNightCycle
+## Sanctuary Day/Night Cycle autoload.
+## Registered as "DayNightCycle" in project.godot.
+##
+## NOTE: no `class_name` — the node-path name IS "DayNightCycle". Declaring a
+## class_name of the same name here would trigger "Class hides an autoload
+## singleton". Consumers (sanct-020, sanct-009) reach it via
+## get_node_or_null("/root/DayNightCycle"), which the autoload satisfies.
 
 ## DayNightCycle — Sanctuary (Taming) day/night cycle.
 ## Models an in-game clock that cycles between day and night over a configurable

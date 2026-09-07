@@ -16,6 +16,8 @@ config/icon="res://icon.svg"
 
 GameState="*res://autoload/game_state.gd"
 EventBus="*res://autoload/event_bus.gd"
+WeatherSystem="*res://autoload/weather_system.gd"
+DayNightCycle="*res://scripts/day_night_cycle.gd"
 
 [display]
 
