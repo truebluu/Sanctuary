@@ -9,10 +9,16 @@ extends Node
 ## instance would double-connect and double-apply every happiness/hunger/energy
 ## modifier to the "creatures" group. Self-destruct instead of double-applying.
 static var _instance: SanctuaryWeatherEffects = null
+# Set when this instance is a detected duplicate. queue_free() in _init() does
+# NOT stop _ready() from running (the node still enters the tree and runs its
+# full _ready before being freed at end-of-frame), so _ready() must bail on
+# this flag to honor the "self-destruct instead of double-apply" contract.
+var _is_duplicate: bool = false
 
 func _init() -> void:
 	if _instance != null and _instance != self and is_instance_valid(_instance):
 		push_warning("SanctuaryWeatherEffects: duplicate instance detected — self-removing to prevent double-apply.")
+		_is_duplicate = true
 		queue_free()
 		return
 	_instance = self
@@ -30,6 +36,8 @@ var _current_weather: String = "clear"  # "clear", "rain", "sun", etc.
 var _timer: Timer
 
 func _ready() -> void:
+	if _is_duplicate:
+		return
 	# Connect to weather system if available
 	var weather_system = get_node_or_null("/root/WeatherSystem")
 	if weather_system:
@@ -97,8 +105,14 @@ func _apply_continuous_effects() -> void:
 				pass
 
 func _on_node_added(node: Node) -> void:
-	if node.is_in_group("creatures"):
-		# Apply current weather effects immediately to new creature
+	# SceneTree.node_added fires BEFORE the node's _ready() runs, so a creature
+	# has not yet joined the "creatures" group here (it does so in its own
+	# _ready, main.gd:41). Defer the check to end-of-frame so _ready() has run
+	# and group membership is set — otherwise this immediate-apply path is dead.
+	call_deferred("_apply_weather_to_new_creature", node)
+
+func _apply_weather_to_new_creature(node: Node) -> void:
+	if is_instance_valid(node) and node.is_in_group("creatures"):
 		_apply_weather_to_creature(node)
 
 func _on_node_removed(node: Node) -> void:
